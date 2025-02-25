@@ -1,8 +1,4 @@
 spring:
-  data:
-    redis:
-      host: ${REDIS_HOST}
-      port: ${REDIS_PORT}
   profiles.active: dev
   application:
     name: file-storage-api
