@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class AuthService {
     private final UserService userService;
+    private final DirectoryService directoryService;
     private final UserMapper userMapper;
     private final AuthenticationManager authenticationManager;
 
@@ -51,6 +52,8 @@ public class AuthService {
         context.setAuthentication(authentication);
 
         setSecurityContextInSession(request, context);
+
+        directoryService.createUserFolder(userResponseDto.getId());
 
         return userResponseDto;
     }
