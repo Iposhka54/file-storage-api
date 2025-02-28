@@ -18,6 +18,7 @@ import org.springframework.security.web.SecurityFilterChain;
 @RequiredArgsConstructor
 public class SecurityConfig {
     private final UserService userService;
+    private final AuthenticationEntryPoint authenticationEntryPoint;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -25,8 +26,10 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
 //                .cors(Customizer.withDefaults()) доделать корс
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/auth/sign-in", "/api/auth/sign-up").permitAll()
                         .anyRequest().authenticated())
+                .exceptionHandling(handling -> handling
+                        .authenticationEntryPoint(authenticationEntryPoint))
                 .formLogin(AbstractHttpConfigurer::disable);
 
         return http.build();
