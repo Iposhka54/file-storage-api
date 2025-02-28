@@ -9,7 +9,7 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 
 @RestControllerAdvice
 public class RoutingExceptionHandler {
-    private static final String UNKNOWN_ENDPOINT_MESSAGE = "Method %s is not allowed for this endpoint. Please, check api documentation";
+    private static final String UNKNOWN_ENDPOINT_MESSAGE = "Unknown endpoint: %s. Please, check api documentation";
 
     @ExceptionHandler(NoHandlerFoundException.class)
     public ResponseEntity<ErrorResponseDto> handleNoHandlerFoundException(NoHandlerFoundException e) {
