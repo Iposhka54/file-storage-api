@@ -14,12 +14,12 @@ import lombok.NoArgsConstructor;
 @Builder
 public class UserRequestDto {
     @NotBlank(message = "Username cannot be empty or just whitespace.")
-    @Size(min = 3, max = 32, message = "Username must be between 3 and 32 characters.")
+    @Size(min = 5, max = 20, message = "Username must be between 3 and 32 characters.")
     @Pattern(regexp = "^[a-zA-Z0-9]+$", message = "Username can only contain letters and numbers.")
     private String username;
 
     @NotBlank(message = "Password cannot be empty or just whitespace.")
-    @Size(min = 8, max = 32, message = "Password must be between 8 and 32 characters.")
-    @Pattern(regexp = "^[a-zA-Z0-9]+$", message = "Password can only contain letters and numbers.")
+    @Size(min = 5, max = 20, message = "Password must be between 8 and 32 characters.")
+    @Pattern(regexp = "^[a-zA-Z0-9!@#$%^&*(),.?\":{}|<>\\[\\]/`~+=-_';]*$", message = "Password need contains letters, numbers and !@#$%^&*(),.?\":{}|<>[]/~+=-_'")
     private String password;
 }
