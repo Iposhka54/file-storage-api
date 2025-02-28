@@ -1,7 +1,13 @@
 package com.iposhka.filestorageapi.repository;
 
-import com.iposhka.filestorageapi.model.User;
+import com.iposhka.filestorageapi.model.AppUser;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface UserRepository extends JpaRepository<User, Long> {
+import java.util.Optional;
+
+public interface UserRepository extends JpaRepository<AppUser, Long> {
+
+    Optional<AppUser> findByUsername(String username);
+
+    boolean existsByUsername(String username);
 }
