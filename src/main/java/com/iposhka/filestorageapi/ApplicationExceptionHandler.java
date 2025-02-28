@@ -15,7 +15,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class ApplicationExceptionHandler {
     private static final String BAD_REQUEST_MESSAGE = "Request body is empty or invalid. Please provide required fields.";
-    private static final String UNAUTHORIZED_MESSAGE = "Invalid username or email";
+    private static final String UNAUTHORIZED_MESSAGE = "Invalid username or password";
+    private static final ErrorResponseDto UNAUTHORIZED_ERROR = new ErrorResponseDto(UNAUTHORIZED_MESSAGE);
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponseDto> handleValidationException(MethodArgumentNotValidException e) {
@@ -37,14 +38,22 @@ public class ApplicationExceptionHandler {
     }
 
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ErrorResponseDto> handleBadCredentialsException(){
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ErrorResponseDto(UNAUTHORIZED_MESSAGE));
+    public ResponseEntity<ErrorResponseDto> handleBadCredentialsException() {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(UNAUTHORIZED_ERROR);
     }
 
     @ExceptionHandler(DatabaseException.class)
     public ResponseEntity<ErrorResponseDto> handleDatabaseException(Exception e) {
         log.error("Database error while saving user: {}", e.getMessage());
 
-        return ResponseEntity.internalServerError().body(new ErrorResponseDto(e.getMessage()));
+        ErrorResponseDto databaseError = new ErrorResponseDto(e.getMessage());
+
+        return ResponseEntity.internalServerError().body(databaseError);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponseDto> handleException(Exception e) {
+        log.error("Unknown error: {}", e.getMessage());
+        return ResponseEntity.internalServerError().body(new ErrorResponseDto("Unknown error"));
     }
 }
