@@ -21,3 +21,10 @@ spring:
       hibernate:
         hbm2ddl:
           auto: none
+
+minio:
+  rootBucket: ${ROOT_BUCKET}
+  url: ${MINIO_URL}
+  credentials:
+    accessKey: ${MINIO_ACCESS_KEY}
+    secretKey: ${MINIO_SECRET_KEY}
