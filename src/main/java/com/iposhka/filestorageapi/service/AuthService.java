@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -24,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class AuthService {
     private final UserService userService;
-    private final DirectoryService directoryService;
+    private final StorageService storageService;
     private final UserMapper userMapper;
     private final AuthenticationManager authenticationManager;
 
@@ -34,7 +35,15 @@ public class AuthService {
 
         setSecurityContextInSession(req, context);
 
-        return userMapper.toDto(userRequestDto);
+        return setIdInUserResponseDto(userRequestDto);
+    }
+
+    @NotNull
+    private UserResponseDto setIdInUserResponseDto(UserRequestDto userRequestDto) {
+        long userId = userService.getIdByUsername(userRequestDto.getUsername());
+        UserResponseDto userResponseDto = userMapper.toDto(userRequestDto);
+        userResponseDto.setId(userId);
+        return userResponseDto;
     }
 
     public UserResponseDto registration(UserRequestDto userRequestDto, HttpServletRequest request) {
@@ -53,7 +62,7 @@ public class AuthService {
 
         setSecurityContextInSession(request, context);
 
-        directoryService.createUserFolder(userResponseDto.getId());
+        storageService.createUserDirectory(userResponseDto.getId());
 
         return userResponseDto;
     }

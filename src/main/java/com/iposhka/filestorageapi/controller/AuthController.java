@@ -24,6 +24,7 @@ public class AuthController {
     public ResponseEntity<UserResponseDto> signIn(@RequestBody @Valid UserRequestDto userRequestDto,
                                                   HttpServletRequest req) {
         UserResponseDto userResponseDto = authService.login(userRequestDto, req);
+        req.getSession().setAttribute("userId", userResponseDto.getId());
         return ResponseEntity.ok(userResponseDto);
     }
 
@@ -31,6 +32,9 @@ public class AuthController {
     public ResponseEntity<UserResponseDto> signUp(@RequestBody @Valid UserRequestDto userRequestDto,
                                                   HttpServletRequest request) {
         UserResponseDto userResponseDto = authService.registration(userRequestDto, request);
+
+        request.getSession().setAttribute("userId", userResponseDto.getId());
+
         return ResponseEntity.created(URI.create("api/user/me")).body(userResponseDto);
     }
 }

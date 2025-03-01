@@ -8,6 +8,6 @@ import lombok.Data;
 @Builder
 public class UserResponseDto {
     @JsonIgnore
-    private int id;
+    private long id;
     private String username;
 }
