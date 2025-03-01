@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class DatabaseExceptionHandler {
     @ExceptionHandler(DatabaseException.class)
     public ResponseEntity<ErrorResponseDto> handleDatabaseException(Exception e) {
-        log.error("Database error while saving user: {}", e.getMessage());
 
         ErrorResponseDto databaseError = new ErrorResponseDto(e.getMessage());
 
