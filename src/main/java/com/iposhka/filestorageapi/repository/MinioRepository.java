@@ -48,6 +48,7 @@ public class MinioRepository {
         return minioClient.listObjects(ListObjectsArgs.builder()
                         .bucket(rootBucket)
                         .prefix(fullPath)
+                        .recursive(false)
                 .build());
     }
 

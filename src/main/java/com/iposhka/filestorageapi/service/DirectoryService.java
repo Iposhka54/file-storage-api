@@ -3,10 +3,7 @@ package com.iposhka.filestorageapi.service;
 import com.iposhka.filestorageapi.dto.responce.resourse.DirectoryResponseDto;
 import com.iposhka.filestorageapi.dto.responce.resourse.FileResponseDto;
 import com.iposhka.filestorageapi.dto.responce.resourse.ResourceResponseDto;
-import com.iposhka.filestorageapi.exception.DatabaseException;
-import com.iposhka.filestorageapi.exception.DirectoryAlreadyExistsException;
-import com.iposhka.filestorageapi.exception.NotValidPathFolderException;
-import com.iposhka.filestorageapi.exception.ParentDirectoryNotFoundException;
+import com.iposhka.filestorageapi.exception.*;
 import com.iposhka.filestorageapi.repository.MinioRepository;
 import io.minio.Result;
 import io.minio.errors.ErrorResponseException;
@@ -22,6 +19,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.iposhka.filestorageapi.dto.ResourceType.FILE;
+
 @Service
 @RequiredArgsConstructor
 public class DirectoryService {
@@ -32,7 +31,8 @@ public class DirectoryService {
     private static final String EMPTY = "";
     private static final boolean MUST_END_WITH_SLASH = true;
     private static final boolean MUST_NOT_END_WITH_SLASH = true;
-    private static final NotValidPathFolderException INVALID_PATH_ERROR = new NotValidPathFolderException("Path to folder not valid");
+    private static final String INVALID_PATH_ERROR_MESSAGE = "Path to folder not valid";
+    private static final String DATABASE_ERROR_MESSAGE = "Any problems with database of files";
 
     @SneakyThrows
     public void createUserDirectory(long userId) {
@@ -42,24 +42,22 @@ public class DirectoryService {
     public List<ResourceResponseDto> listDirectoryContents(String path, long userId) {
         String fullPath = validateAndBuildPath(path, userId, MUST_NOT_END_WITH_SLASH);
 
+        if (!directoryExists(fullPath)) {
+            throw new DirectoryNotFoundException("Directory not found");
+        }
+
         List<ResourceResponseDto> result = new ArrayList<>();
         String parentPath = fullPath.replaceFirst(USER_DIR_PATTERN, EMPTY);
         String parentPathWithoutLastSlash = removeLastSlash(parentPath);
 
         for (Result<Item> itemResult : minioRepository.listObjects(fullPath)) {
-            result.add(createResource(itemResult, parentPathWithoutLastSlash));
+            ResourceResponseDto resource = createResource(itemResult, parentPathWithoutLastSlash, parentPathWithoutLastSlash);
+            if(isNotMinioDir(resource, parentPathWithoutLastSlash)){
+                result.add(resource);
+            }
         }
-        return result;
-    }
 
-    @SneakyThrows
-    private ResourceResponseDto createResource(Result<Item> itemResult, String parentPath) {
-        Item item = itemResult.get();
-        String objectName = removeLastSlash(item.objectName());
-        String name = objectName.substring(objectName.lastIndexOf('/') + 1);
-        return item.isDir()
-                ? new DirectoryResponseDto(parentPath, name)
-                : new FileResponseDto(parentPath, name, item.size());
+        return result;
     }
 
     public DirectoryResponseDto createEmptyDirectory(String path, long userId) {
@@ -78,7 +76,26 @@ public class DirectoryService {
         String parentPathWithoutUserDir = parentPath
                 .replaceFirst(USER_DIR_PATTERN, EMPTY);
         String parentPathWithoutUserDirAndLastSlash = removeLastSlash(parentPathWithoutUserDir);
+
         return new DirectoryResponseDto(parentPathWithoutUserDirAndLastSlash, extractDirectoryName(fullPath));
+    }
+
+    @SneakyThrows
+    private ResourceResponseDto createResource(Result<Item> itemResult, String parentPath, String pathWithoutLastSlash) {
+        Item item = itemResult.get();
+
+        String objectName = removeLastSlash(item.objectName());
+        String name = objectName.substring(objectName.lastIndexOf('/') + 1);
+
+        return item.isDir()
+                ? new DirectoryResponseDto(parentPath, name)
+                : new FileResponseDto(parentPath, name, item.size());
+    }
+
+    private static boolean isNotMinioDir(ResourceResponseDto resource, String parentPathWithoutLastSlash) {
+        return !(resource instanceof FileResponseDto file
+                 && file.getSize() == 0
+                 && file.getName().equals(parentPathWithoutLastSlash));
     }
 
     private boolean directoryExists(String path) {
@@ -105,14 +122,14 @@ public class DirectoryService {
     private static String validateAndBuildPath(String path, long userId, boolean mustEndWithSlash) {
         if (path.isEmpty()) return USER_DIR_TEMPLATE.formatted(userId);
         if (path.startsWith("/") || (mustEndWithSlash && !path.endsWith("/"))) {
-            throw INVALID_PATH_ERROR;
+            throw new InvalidPathFolderException(INVALID_PATH_ERROR_MESSAGE);
         }
         return USER_DIR_TEMPLATE.formatted(userId) + path;
     }
 
     private static String getParentPath(String fullPath, long userId) {
         String rootPath = USER_DIR_TEMPLATE.formatted(userId);
-        if (fullPath.equals(rootPath)) return "";
+        if (fullPath.equals(rootPath)) return EMPTY;
         return fullPath.substring(0, fullPath.lastIndexOf('/', fullPath.length() - 2) + 1);
     }
 
@@ -120,7 +137,7 @@ public class DirectoryService {
         try {
             action.execute();
         } catch (MinioException | IOException | NoSuchAlgorithmException | InvalidKeyException e) {
-            throw new DatabaseException("Any problems with database of files");
+            throw new DatabaseException(DATABASE_ERROR_MESSAGE);
         }
     }
 
@@ -130,7 +147,7 @@ public class DirectoryService {
         } catch (ErrorResponseException e) {
             return null;
         } catch (MinioException | IOException | NoSuchAlgorithmException | InvalidKeyException e) {
-            throw new DatabaseException("Any problems with database of files");
+            throw new DatabaseException(DATABASE_ERROR_MESSAGE);
         }
     }
 
