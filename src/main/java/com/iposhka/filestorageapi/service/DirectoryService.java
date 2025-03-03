@@ -51,7 +51,7 @@ public class DirectoryService {
         String parentPathWithoutLastSlash = removeLastSlash(parentPath);
 
         for (Result<Item> itemResult : minioRepository.listObjects(fullPath)) {
-            ResourceResponseDto resource = createResource(itemResult, parentPathWithoutLastSlash, parentPathWithoutLastSlash);
+            ResourceResponseDto resource = createResource(itemResult, parentPathWithoutLastSlash);
             if(isNotMinioDir(resource, parentPathWithoutLastSlash)){
                 result.add(resource);
             }
@@ -81,7 +81,7 @@ public class DirectoryService {
     }
 
     @SneakyThrows
-    private ResourceResponseDto createResource(Result<Item> itemResult, String parentPath, String pathWithoutLastSlash) {
+    private ResourceResponseDto createResource(Result<Item> itemResult, String parentPath) {
         Item item = itemResult.get();
 
         String objectName = removeLastSlash(item.objectName());
