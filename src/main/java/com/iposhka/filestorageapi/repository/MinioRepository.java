@@ -46,9 +46,9 @@ public class MinioRepository {
 
     public Iterable<Result<Item>> listObjects(String fullPath) {
         return minioClient.listObjects(ListObjectsArgs.builder()
-                        .bucket(rootBucket)
-                        .prefix(fullPath)
-                        .recursive(false)
+                .bucket(rootBucket)
+                .prefix(fullPath)
+                .recursive(false)
                 .build());
     }
 
@@ -64,6 +64,13 @@ public class MinioRepository {
         return minioClient.getObject(GetObjectArgs.builder()
                 .bucket(rootBucket)
                 .object(fullPath)
+                .build());
+    }
+
+    public StatObjectResponse statObject(String fullPath) throws MinioException, IOException, NoSuchAlgorithmException, InvalidKeyException {
+        return minioClient.statObject(StatObjectArgs.builder()
+                        .bucket(rootBucket)
+                        .object(fullPath)
                 .build());
     }
 }

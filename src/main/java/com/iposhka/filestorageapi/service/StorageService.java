@@ -6,6 +6,7 @@ import com.iposhka.filestorageapi.dto.responce.resourse.ResourceResponseDto;
 import com.iposhka.filestorageapi.exception.*;
 import com.iposhka.filestorageapi.repository.MinioRepository;
 import io.minio.Result;
+import io.minio.StatObjectResponse;
 import io.minio.errors.ErrorResponseException;
 import io.minio.errors.MinioException;
 import io.minio.messages.Item;
@@ -18,10 +19,11 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-public class DirectoryService {
+public class StorageService {
     private final MinioRepository minioRepository;
     private static final String USER_DIR_PATTERN = "^user-\\d+-files/";
     private static final String USER_DIR_TEMPLATE = "user-%d-files/";
@@ -74,9 +76,38 @@ public class DirectoryService {
 
         String parentPathWithoutUserDir = parentPath
                 .replaceFirst(USER_DIR_PATTERN, EMPTY);
-        String parentPathWithoutUserDirAndLastSlash = removeLastSlash(parentPathWithoutUserDir);
+        String responsePath = removeLastSlash(parentPathWithoutUserDir);
 
-        return new DirectoryResponseDto(parentPathWithoutUserDirAndLastSlash, extractDirectoryName(fullPath));
+        return new DirectoryResponseDto(responsePath, extractDirectoryName(fullPath));
+    }
+
+    public ResourceResponseDto getInfoAboutResource(String path, long userId) {
+        String fullPath;
+        if (path.isBlank()) {
+            throw new InvalidResourcePathException("Invalid path");
+        }else{
+            fullPath = validateAndBuildPath(path, userId, MUST_END_WITH_SLASH);
+        }
+        String parentPath = getParentPath(path, userId);
+
+        Optional<StatObjectResponse> maybeResource = executeMinioOperationIgnoreNotFound(
+                () -> minioRepository.statObject(fullPath));
+
+        if (maybeResource.isEmpty()) {
+            throw new ResourceNotFoundException("Resource not found");
+        }
+
+        StatObjectResponse resource = maybeResource.get();
+
+        String parentPathWithoutUserDir = parentPath
+                .replaceFirst(USER_DIR_PATTERN, EMPTY);
+        String responsePath = removeLastSlash(parentPathWithoutUserDir);
+
+        String name = extractDirectoryName(fullPath);
+
+        return fullPath.endsWith("/")
+                ? new DirectoryResponseDto(responsePath, name)
+                : new FileResponseDto(responsePath, name, resource.size());
     }
 
     @SneakyThrows
@@ -98,8 +129,7 @@ public class DirectoryService {
     }
 
     private boolean directoryExists(String path) {
-        return Boolean.TRUE.equals(executeMinioOperationIgnoreNotFound(()
-                -> minioRepository.getObject(path) != null));
+        return executeMinioOperationIgnoreNotFound(() -> minioRepository.getObject(path)).isPresent();
     }
 
     private static String extractDirectoryName(String fullPath) {
@@ -140,11 +170,11 @@ public class DirectoryService {
         }
     }
 
-    private <T> T executeMinioOperationIgnoreNotFound(MinioSupplier<T> action) {
+    private <T> Optional<T> executeMinioOperationIgnoreNotFound(MinioSupplier<T> action) {
         try {
-            return action.execute();
+            return Optional.ofNullable(action.execute());
         } catch (ErrorResponseException e) {
-            return null;
+            return Optional.empty();
         } catch (MinioException | IOException | NoSuchAlgorithmException | InvalidKeyException e) {
             throw new DatabaseException(DATABASE_ERROR_MESSAGE);
         }

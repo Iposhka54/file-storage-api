@@ -1,10 +1,7 @@
 package com.iposhka.filestorageapi.handlers;
 
 import com.iposhka.filestorageapi.dto.responce.ErrorResponseDto;
-import com.iposhka.filestorageapi.exception.DirectoryAlreadyExistsException;
-import com.iposhka.filestorageapi.exception.DirectoryNotFoundException;
-import com.iposhka.filestorageapi.exception.InvalidPathFolderException;
-import com.iposhka.filestorageapi.exception.ParentDirectoryNotFoundException;
+import com.iposhka.filestorageapi.exception.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -13,9 +10,10 @@ import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @RestControllerAdvice
-public class DirectoriesExceptionHandler {
+public class StorageExceptionHandler {
 
-    @ExceptionHandler(InvalidPathFolderException.class)
+    @ExceptionHandler({InvalidPathFolderException.class,
+            InvalidResourcePathException.class})
     public ResponseEntity<ErrorResponseDto> handleNotValidPathException(Exception e) {
         ErrorResponseDto errorResponseDto = new ErrorResponseDto(e.getMessage());
         return ResponseEntity.badRequest().body(errorResponseDto);
@@ -28,7 +26,9 @@ public class DirectoriesExceptionHandler {
     }
 
     @ExceptionHandler({ParentDirectoryNotFoundException.class,
-            DirectoryNotFoundException.class})
+            DirectoryNotFoundException.class,
+            ResourceNotFoundException.class
+    })
     public ResponseEntity<ErrorResponseDto> handleParentDirectoryNotFoundException(Exception e) {
         ErrorResponseDto errorResponseDto = new ErrorResponseDto(e.getMessage());
         return ResponseEntity.status(NOT_FOUND).body(errorResponseDto);

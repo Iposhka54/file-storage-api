@@ -25,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class AuthService {
     private final UserService userService;
-    private final DirectoryService directoryService;
+    private final StorageService storageService;
     private final UserMapper userMapper;
     private final AuthenticationManager authenticationManager;
 
@@ -62,7 +62,7 @@ public class AuthService {
 
         setSecurityContextInSession(request, context);
 
-        directoryService.createUserDirectory(userResponseDto.getId());
+        storageService.createUserDirectory(userResponseDto.getId());
 
         return userResponseDto;
     }
