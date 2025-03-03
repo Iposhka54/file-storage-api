@@ -19,8 +19,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.iposhka.filestorageapi.dto.ResourceType.FILE;
-
 @Service
 @RequiredArgsConstructor
 public class DirectoryService {
@@ -33,6 +31,7 @@ public class DirectoryService {
     private static final boolean MUST_NOT_END_WITH_SLASH = true;
     private static final String INVALID_PATH_ERROR_MESSAGE = "Path to folder not valid";
     private static final String DATABASE_ERROR_MESSAGE = "Any problems with database of files";
+    private static final ResourceResponseDto MINIO_DIRECTORY_OBJECT = new DirectoryResponseDto();
 
     @SneakyThrows
     public void createUserDirectory(long userId) {
@@ -51,8 +50,8 @@ public class DirectoryService {
         String parentPathWithoutLastSlash = removeLastSlash(parentPath);
 
         for (Result<Item> itemResult : minioRepository.listObjects(fullPath)) {
-            ResourceResponseDto resource = createResource(itemResult, parentPathWithoutLastSlash);
-            if(isNotMinioDir(resource, parentPathWithoutLastSlash)){
+            ResourceResponseDto resource = createResource(itemResult, parentPathWithoutLastSlash, fullPath);
+            if (MINIO_DIRECTORY_OBJECT != resource) {
                 result.add(resource);
             }
         }
@@ -81,8 +80,14 @@ public class DirectoryService {
     }
 
     @SneakyThrows
-    private ResourceResponseDto createResource(Result<Item> itemResult, String parentPath) {
+    private ResourceResponseDto createResource(Result<Item> itemResult, String parentPath, String fullPath) {
         Item item = itemResult.get();
+
+        if (fullPath.equals(item.objectName())
+            && !item.isDir()
+            && item.size() == 0) {
+            return MINIO_DIRECTORY_OBJECT;
+        }
 
         String objectName = removeLastSlash(item.objectName());
         String name = objectName.substring(objectName.lastIndexOf('/') + 1);
@@ -90,12 +95,6 @@ public class DirectoryService {
         return item.isDir()
                 ? new DirectoryResponseDto(parentPath, name)
                 : new FileResponseDto(parentPath, name, item.size());
-    }
-
-    private static boolean isNotMinioDir(ResourceResponseDto resource, String parentPathWithoutLastSlash) {
-        return !(resource instanceof FileResponseDto file
-                 && file.getSize() == 0
-                 && file.getName().equals(parentPathWithoutLastSlash));
     }
 
     private boolean directoryExists(String path) {
