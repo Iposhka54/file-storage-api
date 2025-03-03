@@ -19,4 +19,11 @@ public class ResourceController {
 
         return ResponseEntity.ok().body(resource);
     }
+
+    @DeleteMapping
+    public ResponseEntity<ResourceResponseDto> deleteResource(@RequestParam String path,
+                                                              @SessionAttribute long userId) {
+        storageService.deleteResource(path, userId);
+        return ResponseEntity.noContent().build();
+    }
 }

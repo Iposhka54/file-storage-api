@@ -20,6 +20,7 @@ public class MinioRepository {
     @Value("${minio.rootBucket}")
     private String rootBucket;
     private final MinioClient minioClient;
+    private static final ByteArrayInputStream EMPTY_BYTE_STREAM = new ByteArrayInputStream(new byte[0]);
 
     @PostConstruct
     @SneakyThrows
@@ -36,39 +37,46 @@ public class MinioRepository {
     }
 
     @SneakyThrows
-    public void createUserDirectory(String fullPath) {
+    public void createUserDirectory(String path) {
         minioClient.putObject(PutObjectArgs.builder()
                 .bucket(rootBucket)
-                .object(fullPath)
-                .stream(new ByteArrayInputStream(new byte[0]), 0, -1)
+                .object(path)
+                .stream(EMPTY_BYTE_STREAM, 0, -1)
                 .build());
     }
 
-    public Iterable<Result<Item>> listObjects(String fullPath) {
+    public Iterable<Result<Item>> listObjects(String path) {
         return minioClient.listObjects(ListObjectsArgs.builder()
                 .bucket(rootBucket)
-                .prefix(fullPath)
+                .prefix(path)
                 .recursive(false)
                 .build());
     }
 
-    public void createEmptyDirectory(String fullPath) throws MinioException, IOException, NoSuchAlgorithmException, InvalidKeyException {
+    public void createEmptyDirectory(String path) throws MinioException, IOException, NoSuchAlgorithmException, InvalidKeyException {
         minioClient.putObject(PutObjectArgs.builder()
                 .bucket(rootBucket)
-                .object(fullPath)
-                .stream(new ByteArrayInputStream(new byte[0]), 0, -1)
+                .object(path)
+                .stream(EMPTY_BYTE_STREAM, 0, -1)
                 .build());
     }
 
-    public GetObjectResponse getObject(String fullPath) throws MinioException, IOException, NoSuchAlgorithmException, InvalidKeyException {
+    public GetObjectResponse getObject(String path) throws MinioException, IOException, NoSuchAlgorithmException, InvalidKeyException {
         return minioClient.getObject(GetObjectArgs.builder()
                 .bucket(rootBucket)
-                .object(fullPath)
+                .object(path)
                 .build());
     }
 
-    public StatObjectResponse statObject(String fullPath) throws MinioException, IOException, NoSuchAlgorithmException, InvalidKeyException {
+    public StatObjectResponse statObject(String path) throws MinioException, IOException, NoSuchAlgorithmException, InvalidKeyException {
         return minioClient.statObject(StatObjectArgs.builder()
+                .bucket(rootBucket)
+                .object(path)
+                .build());
+    }
+
+    public void deleteObject(String fullPath) throws MinioException, IOException, NoSuchAlgorithmException, InvalidKeyException {
+        minioClient.removeObject(RemoveObjectArgs.builder()
                         .bucket(rootBucket)
                         .object(fullPath)
                 .build());

@@ -32,7 +32,7 @@ public class StorageService {
     private static final boolean MUST_END_WITH_SLASH = true;
     private static final boolean MUST_NOT_END_WITH_SLASH = true;
     private static final String INVALID_PATH_ERROR_MESSAGE = "Path to folder not valid";
-    private static final String DATABASE_ERROR_MESSAGE = "Any problems with database of files";
+    private static final String DATABASE_ERROR_MESSAGE = "Any problems with database";
     private static final ResourceResponseDto MINIO_DIRECTORY_OBJECT = new DirectoryResponseDto();
 
     @SneakyThrows
@@ -72,7 +72,7 @@ public class StorageService {
             throw new DirectoryAlreadyExistsException("Directory already exists");
         }
 
-        executeMinioOperation(() -> minioRepository.createEmptyDirectory(fullPath));
+        executeMinioOperation(() -> minioRepository.createEmptyDirectory(fullPath), "with create directory");
 
         String parentPathWithoutUserDir = parentPath
                 .replaceFirst(USER_DIR_PATTERN, EMPTY);
@@ -85,6 +85,7 @@ public class StorageService {
         if (path.isBlank()) {
             throw new InvalidResourcePathException("Invalid path");
         }
+
         String fullPath = USER_DIR_TEMPLATE.formatted(userId) + path;
         String parentPath = getParentPath(path, userId);
 
@@ -106,6 +107,23 @@ public class StorageService {
         return fullPath.endsWith("/")
                 ? new DirectoryResponseDto(responsePath, name)
                 : new FileResponseDto(responsePath, name, resource.size());
+    }
+
+    public void deleteResource(String path, long userId) {
+        if (path.isBlank()) {
+            throw new InvalidResourcePathException("Invalid path");
+        }
+
+        String fullPath = USER_DIR_TEMPLATE.formatted(userId) + path;
+
+        Optional<StatObjectResponse> maybeResource = executeMinioOperationIgnoreNotFound(
+                () -> minioRepository.statObject(fullPath));
+
+        if (maybeResource.isEmpty()) {
+            throw new ResourceNotFoundException("Resource not found");
+        }
+
+        executeMinioOperation(() -> minioRepository.deleteObject(fullPath), "with delete object");
     }
 
     @SneakyThrows
@@ -160,11 +178,11 @@ public class StorageService {
         return fullPath.substring(0, fullPath.lastIndexOf('/', fullPath.length() - 2) + 1);
     }
 
-    private void executeMinioOperation(MinioAction action) {
+    private void executeMinioOperation(MinioAction action, String fromMessage) {
         try {
             action.execute();
         } catch (MinioException | IOException | NoSuchAlgorithmException | InvalidKeyException e) {
-            throw new DatabaseException(DATABASE_ERROR_MESSAGE);
+            throw new DatabaseException(DATABASE_ERROR_MESSAGE + " " + fromMessage);
         }
     }
 
