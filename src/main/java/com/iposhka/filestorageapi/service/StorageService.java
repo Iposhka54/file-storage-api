@@ -82,12 +82,10 @@ public class StorageService {
     }
 
     public ResourceResponseDto getInfoAboutResource(String path, long userId) {
-        String fullPath;
         if (path.isBlank()) {
             throw new InvalidResourcePathException("Invalid path");
-        }else{
-            fullPath = validateAndBuildPath(path, userId, MUST_END_WITH_SLASH);
         }
+        String fullPath = USER_DIR_TEMPLATE.formatted(userId) + path;
         String parentPath = getParentPath(path, userId);
 
         Optional<StatObjectResponse> maybeResource = executeMinioOperationIgnoreNotFound(
