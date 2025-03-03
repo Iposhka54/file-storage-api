@@ -7,9 +7,9 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = false)
 @Data
 public class FileResponseDto extends ResourceResponseDto {
-    private int size;
+    private long size;
 
-    public FileResponseDto(String path, String name, int size) {
+    public FileResponseDto(String path, String name, long size) {
         this.path = path;
         this.name = name;
         this.size = size;

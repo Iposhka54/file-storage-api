@@ -2,6 +2,7 @@ package com.iposhka.filestorageapi.repository;
 
 import io.minio.*;
 import io.minio.errors.MinioException;
+import io.minio.messages.Item;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -40,6 +41,13 @@ public class MinioRepository {
                 .bucket(rootBucket)
                 .object(fullPath)
                 .stream(new ByteArrayInputStream(new byte[0]), 0, -1)
+                .build());
+    }
+
+    public Iterable<Result<Item>> listObjects(String fullPath) {
+        return minioClient.listObjects(ListObjectsArgs.builder()
+                        .bucket(rootBucket)
+                        .prefix(fullPath)
                 .build());
     }
 
