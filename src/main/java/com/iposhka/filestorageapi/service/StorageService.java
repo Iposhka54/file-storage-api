@@ -19,8 +19,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -161,6 +164,35 @@ public class StorageService {
         return !fullPath.endsWith("/")
                 ? downloadFile(resource, fullPath)
                 : downloadZipDirectory(fullPath);
+    }
+
+    public List<ResourceResponseDto> searchResources(String query, long userId) {
+        String userDirectoryPath = USER_DIR_TEMPLATE.formatted(userId);
+        List<ResourceResponseDto> result = new ArrayList<>();
+
+        Pattern pattern = Pattern.compile(".*%s.*".formatted(query), Pattern.CASE_INSENSITIVE);
+
+        Iterable<Result<Item>> resources = minioRepository.listObjects(userDirectoryPath, NEED_RECURSIVE);
+        for (Result<Item> resultItem : resources) {
+            Item item = executeMinioOperation(resultItem::get);
+            if(isMinioDirectoryObject(item.objectName(), item)){
+                continue;
+            }
+
+            String itemName = extractName(item.objectName());
+
+            Matcher matcher = pattern.matcher(itemName);
+            if (matcher.find()) {
+                String parentPath = getParentPath(item.objectName(), userId);
+                String parentPathWithoutUserDir = parentPath
+                        .replaceFirst(USER_DIR_PATTERN, EMPTY);
+                String responsePath = removeLastSlash(parentPathWithoutUserDir);
+
+                result.add(new FileResponseDto(responsePath, itemName, item.size()));
+            }
+        }
+
+        return result;
     }
 
     private DownloadResourceDto downloadFile(GetObjectResponse resource, String fullPath) {

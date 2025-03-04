@@ -10,6 +10,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("api/resource")
@@ -40,5 +42,12 @@ public class ResourceController {
                         "attachment; filename=\"" + downloadResourceDto.getName() + "\"")
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(downloadResourceDto.getResource());
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<ResourceResponseDto>> searchResources(@RequestParam String query,
+                                                                     @SessionAttribute long userId) {
+        List<ResourceResponseDto> resources = storageService.searchResources(query, userId);
+        return ResponseEntity.ok().body(resources);
     }
 }
