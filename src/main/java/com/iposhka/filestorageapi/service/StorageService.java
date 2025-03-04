@@ -30,7 +30,9 @@ public class StorageService {
     private static final String LAST_SLASH_PATTERN = "/$";
     private static final String EMPTY = "";
     private static final boolean MUST_END_WITH_SLASH = true;
-    private static final boolean MUST_NOT_END_WITH_SLASH = true;
+    private static final boolean MUST_NOT_END_WITH_SLASH = false;
+    private static final boolean NOT_NEED_RECURSIVE = false;
+    private static final boolean NEED_RECURSIVE = true;
     private static final String INVALID_PATH_ERROR_MESSAGE = "Path to folder not valid";
     private static final String DATABASE_ERROR_MESSAGE = "Any problems with database";
     private static final ResourceResponseDto MINIO_DIRECTORY_OBJECT = new DirectoryResponseDto();
@@ -41,7 +43,7 @@ public class StorageService {
     }
 
     public List<ResourceResponseDto> getDirectoryFiles(String path, long userId) {
-        String fullPath = validateAndBuildPath(path, userId, MUST_NOT_END_WITH_SLASH);
+        String fullPath = validateAndBuildPath(path, userId, MUST_END_WITH_SLASH);
 
         if (!directoryExists(fullPath)) {
             throw new DirectoryNotFoundException("Directory not found");
@@ -51,7 +53,7 @@ public class StorageService {
         String parentPath = fullPath.replaceFirst(USER_DIR_PATTERN, EMPTY);
         String parentPathWithoutLastSlash = removeLastSlash(parentPath);
 
-        for (Result<Item> itemResult : minioRepository.listObjects(fullPath)) {
+        for (Result<Item> itemResult : minioRepository.listObjects(fullPath, NOT_NEED_RECURSIVE)) {
             ResourceResponseDto resource = createResource(itemResult, parentPathWithoutLastSlash, fullPath);
             if (MINIO_DIRECTORY_OBJECT != resource) {
                 result.add(resource);
@@ -110,10 +112,6 @@ public class StorageService {
     }
 
     public void deleteResource(String path, long userId) {
-        if (path.isBlank()) {
-            throw new InvalidResourcePathException("Invalid path");
-        }
-
         String fullPath = USER_DIR_TEMPLATE.formatted(userId) + path;
 
         Optional<StatObjectResponse> maybeResource = executeMinioOperationIgnoreNotFound(
@@ -123,7 +121,23 @@ public class StorageService {
             throw new ResourceNotFoundException("Resource not found");
         }
 
-        executeMinioOperation(() -> minioRepository.deleteObject(fullPath), "with delete object");
+        if (!fullPath.endsWith("/")) {
+            executeMinioOperation(() -> minioRepository.deleteObject(fullPath), "with deleting file");
+            return;
+        }
+
+        List<String> objectsToDelete = new ArrayList<>();
+        for (Result<Item> itemResult : minioRepository.listObjects(fullPath, NEED_RECURSIVE)) {
+            Item item = executeMinioOperationIgnoreNotFound(itemResult::get)
+                    .orElseThrow(() -> new DatabaseException("Any problems when get objects"));
+            objectsToDelete.add(item.objectName());
+        }
+
+        for (String objectName : objectsToDelete) {
+            executeMinioOperation(() -> minioRepository.deleteObject(objectName), "with delete object");
+        }
+
+        executeMinioOperation(() -> minioRepository.deleteObject(fullPath), "while deleting empty directory");
     }
 
     @SneakyThrows

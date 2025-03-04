@@ -43,11 +43,11 @@ public class MinioRepository {
                 .build());
     }
 
-    public Iterable<Result<Item>> listObjects(String path) {
+    public Iterable<Result<Item>> listObjects(String path, boolean recursive) {
         return minioClient.listObjects(ListObjectsArgs.builder()
                 .bucket(rootBucket)
                 .prefix(path)
-                .recursive(false)
+                .recursive(recursive)
                 .build());
     }
 
