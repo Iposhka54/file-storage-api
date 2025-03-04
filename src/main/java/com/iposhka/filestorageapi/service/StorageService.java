@@ -9,8 +9,6 @@ import com.iposhka.filestorageapi.repository.MinioRepository;
 import io.minio.GetObjectResponse;
 import io.minio.Result;
 import io.minio.StatObjectResponse;
-import io.minio.errors.ErrorResponseException;
-import io.minio.errors.MinioException;
 import io.minio.messages.Item;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.InputStreamResource;
@@ -20,18 +18,24 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import static com.iposhka.filestorageapi.utils.MinioUtils.executeMinioOperation;
+import static com.iposhka.filestorageapi.utils.MinioUtils.executeMinioOperationIgnoreNotFound;
+
 @Service
 @RequiredArgsConstructor
 public class StorageService {
     private final MinioRepository minioRepository;
+
+    public static final String INVALID_PATH_ERROR_MESSAGE = "Path to resource not valid";
+    public static final String DATABASE_ERROR_MESSAGE = "Any problems with database";
+    public static final String RESOURCE_NOT_FOUND_MESSAGE = "Resource not found";
+
     private static final int BUFFER_SIZE = 8192;
     private static final String USER_DIR_PATTERN = "^user-\\d+-files/";
     private static final String USER_DIR_TEMPLATE = "user-%d-files/";
@@ -40,9 +44,6 @@ public class StorageService {
     private static final boolean MUST_END_WITH_SLASH = true;
     private static final boolean NOT_NEED_RECURSIVE = false;
     private static final boolean NEED_RECURSIVE = true;
-    private static final String INVALID_PATH_ERROR_MESSAGE = "Path to resource not valid";
-    private static final String DATABASE_ERROR_MESSAGE = "Any problems with database";
-    private static final String RESOURCE_NOT_FOUND_MESSAGE = "Resource not found";
     private static final ResourceResponseDto MINIO_DIRECTORY_OBJECT = new DirectoryResponseDto();
 
     public void createUserDirectory(long userId) {
@@ -176,7 +177,7 @@ public class StorageService {
             for (Result<Item> itemResult : minioRepository.listObjects(fullPath, NEED_RECURSIVE)) {
                 Item item = executeMinioOperation(itemResult::get);
 
-                if(isMinioDirectoryObject(fullPath, item)) continue;
+                if (isMinioDirectoryObject(fullPath, item)) continue;
 
                 GetObjectResponse fileResponse = executeMinioOperation(() -> minioRepository.getObject(item.objectName()));
 
@@ -255,41 +256,5 @@ public class StorageService {
         String rootPath = USER_DIR_TEMPLATE.formatted(userId);
         if (fullPath.equals(rootPath)) return EMPTY;
         return fullPath.substring(0, fullPath.lastIndexOf('/', fullPath.length() - 2) + 1);
-    }
-
-    private void executeMinioOperation(MinioAction action, String fromMessage) {
-        try {
-            action.execute();
-        } catch (MinioException | IOException | NoSuchAlgorithmException | InvalidKeyException e) {
-            throw new DatabaseException(DATABASE_ERROR_MESSAGE + " " + fromMessage);
-        }
-    }
-
-    private <T> Optional<T> executeMinioOperationIgnoreNotFound(MinioSupplier<T> action) {
-        try {
-            return Optional.ofNullable(action.execute());
-        } catch (ErrorResponseException e) {
-            return Optional.empty();
-        } catch (MinioException | IOException | NoSuchAlgorithmException | InvalidKeyException e) {
-            throw new DatabaseException(DATABASE_ERROR_MESSAGE);
-        }
-    }
-
-    private <T> T executeMinioOperation(MinioSupplier<T> action) {
-        try {
-            return action.execute();
-        } catch (MinioException | IOException | NoSuchAlgorithmException | InvalidKeyException e) {
-            throw new DatabaseException(DATABASE_ERROR_MESSAGE);
-        }
-    }
-
-    @FunctionalInterface
-    private interface MinioAction {
-        void execute() throws MinioException, IOException, NoSuchAlgorithmException, InvalidKeyException;
-    }
-
-    @FunctionalInterface
-    private interface MinioSupplier<T> {
-        T execute() throws MinioException, IOException, NoSuchAlgorithmException, InvalidKeyException;
     }
 }
