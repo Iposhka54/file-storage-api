@@ -2,32 +2,42 @@ package com.iposhka.filestorageapi.service;
 
 import com.iposhka.filestorageapi.dto.request.UserRequestDto;
 import com.iposhka.filestorageapi.dto.responce.UserResponseDto;
+import com.iposhka.filestorageapi.exception.DatabaseException;
 import com.iposhka.filestorageapi.exception.UserAlreadyExistsException;
+import com.iposhka.filestorageapi.exception.UserNotExistsException;
 import com.iposhka.filestorageapi.mapper.UserMapper;
+import com.iposhka.filestorageapi.model.AppUser;
+import com.iposhka.filestorageapi.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class AuthService {
+    private final UserRepository userRepository;
     private final UserService userService;
     private final StorageService storageService;
     private final UserMapper userMapper;
     private final AuthenticationManager authenticationManager;
+    private final PasswordEncoder passwordEncoder;
 
     public UserResponseDto login(UserRequestDto userRequestDto, HttpServletRequest req) {
 
@@ -40,18 +50,31 @@ public class AuthService {
 
     @NotNull
     private UserResponseDto setIdInUserResponseDto(UserRequestDto userRequestDto) {
-        long userId = userService.getIdByUsername(userRequestDto.getUsername());
-        UserResponseDto userResponseDto = userMapper.toDto(userRequestDto);
-        userResponseDto.setId(userId);
+        Optional<AppUser> maybeUser = userRepository.findByUsername(userRequestDto.getUsername());
+        AppUser user = maybeUser.orElseThrow(() -> new UserNotExistsException("User not found"));
+
+        UserResponseDto userResponseDto = userMapper.userRequestDtoToUserResponseDto(userRequestDto);
+        userResponseDto.setId(user.getId());
         return userResponseDto;
     }
 
     public UserResponseDto registration(UserRequestDto userRequestDto, HttpServletRequest request) {
-        if (userService.existsByUsername(userRequestDto.getUsername())) {
+        if (userRepository.existsByUsername(userRequestDto.getUsername())) {
             throw new UserAlreadyExistsException("User with that username already exists");
         }
 
-        UserResponseDto userResponseDto = userService.register(userRequestDto);
+        userRequestDto.setPassword(passwordEncoder.encode(userRequestDto.getPassword()));
+
+        AppUser user = userMapper.userRequestDtoToAppUser(userRequestDto);
+        try {
+            userRepository.save(user);
+        } catch (DataIntegrityViolationException e) {
+            throw new UserAlreadyExistsException("User with that username already exists");
+        } catch (Exception e) {
+            throw new DatabaseException("Any problem with database when register");
+        }
+
+        UserResponseDto userResponseDto = userMapper.appUserToUserResponseDto(user);
 
         UserDetails userDetails = userService.loadUserByUsername(userResponseDto.getUsername());
 
