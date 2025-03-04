@@ -1,4 +1,4 @@
-package com.iposhka.filestorageapi.handlers;
+package com.iposhka.filestorageapi.handler;
 
 import com.iposhka.filestorageapi.dto.responce.ErrorResponseDto;
 import com.iposhka.filestorageapi.exception.UserAlreadyExistsException;
