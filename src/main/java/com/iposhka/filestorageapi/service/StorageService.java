@@ -35,12 +35,12 @@ public class StorageService {
     private static final String DATABASE_ERROR_MESSAGE = "Any problems with database";
     private static final ResourceResponseDto MINIO_DIRECTORY_OBJECT = new DirectoryResponseDto();
 
-    @SneakyThrows
     public void createUserDirectory(long userId) {
-        minioRepository.createUserDirectory(USER_DIR_TEMPLATE.formatted(userId));
+        String userDir = USER_DIR_TEMPLATE.formatted(userId);
+        executeMinioOperation(() -> minioRepository.createUserDirectory(userDir), "with creating directory");
     }
 
-    public List<ResourceResponseDto> listDirectoryContents(String path, long userId) {
+    public List<ResourceResponseDto> getDirectoryFiles(String path, long userId) {
         String fullPath = validateAndBuildPath(path, userId, MUST_NOT_END_WITH_SLASH);
 
         if (!directoryExists(fullPath)) {
@@ -165,7 +165,7 @@ public class StorageService {
     }
 
     private static String validateAndBuildPath(String path, long userId, boolean mustEndWithSlash) {
-        if (path.isEmpty()) return USER_DIR_TEMPLATE.formatted(userId);
+        if (path.isBlank()) return USER_DIR_TEMPLATE.formatted(userId);
         if (path.startsWith("/") || (mustEndWithSlash && !path.endsWith("/"))) {
             throw new InvalidPathFolderException(INVALID_PATH_ERROR_MESSAGE);
         }

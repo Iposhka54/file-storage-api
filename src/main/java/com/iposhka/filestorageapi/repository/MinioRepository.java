@@ -23,8 +23,7 @@ public class MinioRepository {
     private static final ByteArrayInputStream EMPTY_BYTE_STREAM = new ByteArrayInputStream(new byte[0]);
 
     @PostConstruct
-    @SneakyThrows
-    public void makeBucket() {
+    public void makeBucket() throws MinioException, IOException, NoSuchAlgorithmException, InvalidKeyException {
         boolean bucketExists = minioClient.bucketExists(BucketExistsArgs.builder()
                 .bucket(rootBucket)
                 .build());
@@ -36,8 +35,7 @@ public class MinioRepository {
         }
     }
 
-    @SneakyThrows
-    public void createUserDirectory(String path) {
+    public void createUserDirectory(String path) throws MinioException, IOException, NoSuchAlgorithmException, InvalidKeyException {
         minioClient.putObject(PutObjectArgs.builder()
                 .bucket(rootBucket)
                 .object(path)

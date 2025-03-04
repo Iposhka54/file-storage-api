@@ -19,7 +19,7 @@ public class DirectoryController {
     @GetMapping
     public ResponseEntity<List<ResourceResponseDto>> getDirectoryResources(@RequestParam String path,
                                                                            @SessionAttribute long userId) {
-        List<ResourceResponseDto> directoryResources = storageService.listDirectoryContents(path, userId);
+        List<ResourceResponseDto> directoryResources = storageService.getDirectoryFiles(path, userId);
         return ResponseEntity.ok(directoryResources);
     }
 
