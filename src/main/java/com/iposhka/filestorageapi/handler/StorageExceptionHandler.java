@@ -19,7 +19,8 @@ public class StorageExceptionHandler {
         return ResponseEntity.badRequest().body(errorResponseDto);
     }
 
-    @ExceptionHandler(DirectoryAlreadyExistsException.class)
+    @ExceptionHandler({DirectoryAlreadyExistsException.class,
+            ResourceAlreadyExistsException.class})
     public ResponseEntity<ErrorResponseDto> handleDirectoryAlreadyExistsException(Exception e) {
         ErrorResponseDto errorResponseDto = new ErrorResponseDto(e.getMessage());
         return ResponseEntity.status(CONFLICT).body(errorResponseDto);
