@@ -3,6 +3,7 @@ package com.iposhka.filestorageapi.controller;
 import com.iposhka.filestorageapi.dto.responce.resourse.DownloadResourceDto;
 import com.iposhka.filestorageapi.dto.responce.resourse.ResourceResponseDto;
 import com.iposhka.filestorageapi.service.StorageService;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -49,5 +50,13 @@ public class ResourceController {
                                                                      @SessionAttribute long userId) {
         List<ResourceResponseDto> resources = storageService.searchResources(query, userId);
         return ResponseEntity.ok().body(resources);
+    }
+
+    @GetMapping("/move")
+    public ResponseEntity<ResourceResponseDto> moveResource(@RequestParam String from,
+                                                            @RequestParam String to,
+                                                            @SessionAttribute long userId) {
+        ResourceResponseDto resourceResponseDto = storageService.moveOrRenameResource(from, to, userId);
+        return ResponseEntity.ok(resourceResponseDto);
     }
 }

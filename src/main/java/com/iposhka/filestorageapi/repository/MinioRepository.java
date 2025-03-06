@@ -78,4 +78,15 @@ public class MinioRepository {
                         .object(fullPath)
                 .build());
     }
+
+    public void copyObject(String from, String to) throws MinioException, IOException, NoSuchAlgorithmException, InvalidKeyException {
+        minioClient.copyObject(CopyObjectArgs.builder()
+                        .bucket(rootBucket)
+                        .object(to)
+                        .source(CopySource.builder()
+                                .bucket(rootBucket)
+                                .object(from)
+                                .build())
+                .build());
+    }
 }

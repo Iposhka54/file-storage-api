@@ -19,7 +19,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -29,6 +28,7 @@ import java.util.zip.ZipOutputStream;
 
 import static com.iposhka.filestorageapi.utils.MinioUtils.executeMinioOperation;
 import static com.iposhka.filestorageapi.utils.MinioUtils.executeMinioOperationIgnoreNotFound;
+import static java.util.regex.Pattern.CASE_INSENSITIVE;
 
 @Service
 @RequiredArgsConstructor
@@ -42,6 +42,7 @@ public class StorageService {
     private static final int BUFFER_SIZE = 8192;
     private static final String USER_DIR_PATTERN = "^user-\\d+-files/";
     private static final String USER_DIR_TEMPLATE = "user-%d-files/";
+    private static final String SEARCH_TEMPLATE = ".*%s.*";
     private static final String LAST_SLASH_PATTERN = "/$";
     private static final String EMPTY = "";
     private static final boolean MUST_END_WITH_SLASH = true;
@@ -133,23 +134,11 @@ public class StorageService {
             throw new ResourceNotFoundException("Resource not found");
         }
 
-        if (!fullPath.endsWith("/")) {
+        if (fullPath.endsWith("/")) {
+            deleteDirectoryRecursively(fullPath);
+        } else {
             executeMinioOperation(() -> minioRepository.deleteObject(fullPath), "with deleting file");
-            return;
         }
-
-        List<String> objectsToDelete = new ArrayList<>();
-        for (Result<Item> itemResult : minioRepository.listObjects(fullPath, NEED_RECURSIVE)) {
-            Item item = executeMinioOperationIgnoreNotFound(itemResult::get)
-                    .orElseThrow(() -> new DatabaseException("Any problems when get objects"));
-            objectsToDelete.add(item.objectName());
-        }
-
-        for (String objectName : objectsToDelete) {
-            executeMinioOperation(() -> minioRepository.deleteObject(objectName), "with delete object");
-        }
-
-        executeMinioOperation(() -> minioRepository.deleteObject(fullPath), "while deleting empty directory");
     }
 
     public DownloadResourceDto downloadResource(String path, long userId) {
@@ -170,12 +159,12 @@ public class StorageService {
         String userDirectoryPath = USER_DIR_TEMPLATE.formatted(userId);
         List<ResourceResponseDto> result = new ArrayList<>();
 
-        Pattern pattern = Pattern.compile(".*%s.*".formatted(query), Pattern.CASE_INSENSITIVE);
+        Pattern pattern = Pattern.compile(SEARCH_TEMPLATE.formatted(query), CASE_INSENSITIVE);
 
         Iterable<Result<Item>> resources = minioRepository.listObjects(userDirectoryPath, NEED_RECURSIVE);
         for (Result<Item> resultItem : resources) {
             Item item = executeMinioOperation(resultItem::get);
-            if(isMinioDirectoryObject(item.objectName(), item)){
+            if (isMinioDirectoryObject(item.objectName(), item)) {
                 continue;
             }
 
@@ -193,6 +182,109 @@ public class StorageService {
         }
 
         return result;
+    }
+
+    public ResourceResponseDto moveOrRenameResource(String from, String to, long userId) {
+        if (from.isBlank() || to.isBlank()) {
+            throw new InvalidResourcePathException(INVALID_PATH_ERROR_MESSAGE);
+        }
+
+        String userDir = String.format(USER_DIR_TEMPLATE, userId);
+        String fullFromPath = userDir + from;
+        String fullToPath = userDir + to;
+
+        executeMinioOperationIgnoreNotFound(()
+                -> minioRepository.statObject(fullFromPath))
+                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_NOT_FOUND_MESSAGE));
+
+        executeMinioOperationIgnoreNotFound(()
+                -> minioRepository.statObject(fullToPath))
+                .ifPresent(resource -> {
+                    throw new ResourceAlreadyExistsException("Resource already exists");
+                });
+
+        String parentFrom = getParentPath(fullFromPath, userId);
+        String parentTo = getParentPath(fullToPath, userId);
+
+        return parentFrom.equals(parentTo)
+                ? renameResource(fullFromPath, fullToPath, userId)
+                : moveResource(fullFromPath, fullToPath, userId);
+    }
+
+    private ResourceResponseDto moveResource(String fullFromPath, String fullToPath, long userId) {
+        if (fullFromPath.endsWith("/")) {
+            executeMinioOperation(() -> minioRepository.createEmptyDirectory(fullToPath), "creating target directory");
+            copyDirectoryRecursively(fullFromPath, fullToPath);
+            deleteDirectoryRecursively(fullFromPath);
+        } else {
+            executeMinioOperation(() -> minioRepository.copyObject(fullFromPath, fullToPath),
+                    "with moving file");
+            executeMinioOperation(() -> minioRepository.deleteObject(fullFromPath),
+                    "with deleting file after move");
+        }
+
+        return createResponse(fullToPath, userId);
+    }
+
+
+    private ResourceResponseDto renameResource(String fullFromPath, String fullToPath, long userId) {
+        if (fullFromPath.endsWith("/")) {
+            copyDirectoryRecursively(fullFromPath, fullToPath);
+            deleteDirectoryRecursively(fullFromPath);
+        } else {
+            executeMinioOperation(() -> minioRepository.copyObject(fullFromPath, fullToPath),
+                    "with renaming file");
+            executeMinioOperation(() -> minioRepository.deleteObject(fullFromPath),
+                    "with deleting file after rename");
+        }
+
+        return createResponse(fullToPath, userId);
+    }
+
+
+    private ResourceResponseDto createResponse(String fullPath, long userId) {
+        String parentPath = getParentPath(fullPath, userId);
+        String parentPathWithoutUserDir = parentPath
+                .replaceFirst(USER_DIR_PATTERN, EMPTY);
+        String responsePath = removeLastSlash(parentPathWithoutUserDir);
+
+        StatObjectResponse stat = executeMinioOperationIgnoreNotFound(() -> minioRepository.statObject(fullPath)).get();
+
+        return fullPath.endsWith("/")
+                ? new DirectoryResponseDto(responsePath, extractName(fullPath))
+                : new FileResponseDto(responsePath, extractName(fullPath), stat.size());
+    }
+
+    private void copyDirectoryRecursively(String from, String to) {
+        for (Result<Item> itemResult : minioRepository.listObjects(from, NEED_RECURSIVE)) {
+            Item item = executeMinioOperation(itemResult::get);
+            String itemName = item.objectName();
+
+            if (isMinioDirectoryObject(from, item)) {
+                continue;
+            }
+
+            String newDestination = itemName.replaceFirst(Pattern.quote(from), to);
+
+            executeMinioOperation(() -> minioRepository.copyObject(itemName, newDestination),
+                    "with copying file/directory recursively");
+        }
+    }
+
+    private void deleteDirectoryRecursively(String path) {
+        List<String> objectsToDelete = new ArrayList<>();
+
+        for (Result<Item> itemResult : minioRepository.listObjects(path, NEED_RECURSIVE)) {
+            Item item = executeMinioOperationIgnoreNotFound(itemResult::get)
+                    .orElseThrow(() -> new DatabaseException("Error retrieving objects for deletion"));
+            objectsToDelete.add(item.objectName());
+        }
+
+        for (String objectName : objectsToDelete) {
+            executeMinioOperation(() -> minioRepository.deleteObject(objectName), "with deleting object");
+        }
+
+        executeMinioOperation(() -> minioRepository.deleteObject(path), "while deleting empty directory");
     }
 
     private DownloadResourceDto downloadFile(GetObjectResponse resource, String fullPath) {
