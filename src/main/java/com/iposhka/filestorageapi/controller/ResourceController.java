@@ -46,9 +46,9 @@ public class ResourceController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<ResourceResponseDto>> searchResources(@RequestParam String query,
+    public ResponseEntity<List<ResourceResponseDto>> searchResource(@RequestParam String query,
                                                                      @SessionAttribute long userId) {
-        List<ResourceResponseDto> resources = storageService.searchResources(query, userId);
+        List<ResourceResponseDto> resources = storageService.searchResource(query, userId);
         return ResponseEntity.ok().body(resources);
     }
 

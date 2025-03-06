@@ -155,7 +155,7 @@ public class StorageService {
                 : downloadZipDirectory(fullPath);
     }
 
-    public List<ResourceResponseDto> searchResources(String query, long userId) {
+    public List<ResourceResponseDto> searchResource(String query, long userId) {
         String userDirectoryPath = USER_DIR_TEMPLATE.formatted(userId);
         List<ResourceResponseDto> result = new ArrayList<>();
 
