@@ -13,6 +13,7 @@ import io.minio.messages.Item;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -229,6 +230,7 @@ public class StorageService {
 
     private ResourceResponseDto renameResource(String fullFromPath, String fullToPath, long userId) {
         if (fullFromPath.endsWith("/")) {
+            executeMinioOperation(() -> minioRepository.createEmptyDirectory(fullToPath), "creating target directory");
             copyDirectoryRecursively(fullFromPath, fullToPath);
             deleteDirectoryRecursively(fullFromPath);
         } else {
