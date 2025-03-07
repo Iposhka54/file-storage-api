@@ -22,6 +22,11 @@ spring:
         hbm2ddl:
           auto: none
 
+  servlet:
+    multipart:
+      max-file-size: 512MB
+      max-request-size: 512MB
+
 minio:
   rootBucket: ${ROOT_BUCKET}
   url: ${MINIO_URL}

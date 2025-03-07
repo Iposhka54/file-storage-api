@@ -5,6 +5,11 @@ spring:
         show_sql: true
         format_sql: true
 
+  servlet:
+    multipart:
+      max-file-size: 128MB
+      max-request-size: 128MB
+
 logging:
   level:
     org.springframework.security: DEBUG
