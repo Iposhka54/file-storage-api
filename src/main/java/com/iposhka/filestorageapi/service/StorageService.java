@@ -47,7 +47,6 @@ public class StorageService {
     private static final String SEARCH_TEMPLATE = ".*%s.*";
     private static final String LAST_SLASH_PATTERN = "/$";
     private static final String EMPTY = "";
-    private static final boolean MUST_END_WITH_SLASH = true;
     private static final boolean NOT_NEED_RECURSIVE = false;
     private static final boolean NEED_RECURSIVE = true;
     private static final ResourceResponseDto MINIO_DIRECTORY_OBJECT = new DirectoryResponseDto();
@@ -58,7 +57,7 @@ public class StorageService {
     }
 
     public List<ResourceResponseDto> getDirectoryFiles(String path, long userId) {
-        String fullPath = validateAndBuildPath(path, userId, MUST_END_WITH_SLASH);
+        String fullPath = validateAndBuildPath(path, userId);
 
         if (!directoryExists(fullPath)) {
             throw new DirectoryNotFoundException("Directory not found");
@@ -79,7 +78,7 @@ public class StorageService {
     }
 
     public DirectoryResponseDto createEmptyDirectory(String path, long userId) {
-        String fullPath = validateAndBuildPath(path, userId, MUST_END_WITH_SLASH);
+        String fullPath = validateAndBuildPath(path, userId);
         String parentPath = getParentPath(fullPath, userId);
 
         if (!directoryExists(parentPath)) {
@@ -410,9 +409,9 @@ public class StorageService {
         return path.replaceAll(LAST_SLASH_PATTERN, EMPTY);
     }
 
-    private static String validateAndBuildPath(String path, long userId, boolean mustEndWithSlash) {
+    private static String validateAndBuildPath(String path, long userId) {
         if (path.isBlank()) return USER_DIR_TEMPLATE.formatted(userId);
-        if (path.startsWith("/") || (mustEndWithSlash && !path.endsWith("/"))) {
+        if (path.startsWith("/") || (!path.endsWith("/"))) {
             throw new InvalidPathFolderException(INVALID_PATH_ERROR_MESSAGE);
         }
         return USER_DIR_TEMPLATE.formatted(userId) + path;
