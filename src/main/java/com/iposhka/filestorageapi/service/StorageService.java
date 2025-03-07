@@ -8,6 +8,7 @@ import com.iposhka.filestorageapi.exception.*;
 import com.iposhka.filestorageapi.repository.MinioRepository;
 import io.minio.GetObjectResponse;
 import io.minio.Result;
+import io.minio.SnowballObject;
 import io.minio.StatObjectResponse;
 import io.minio.messages.Item;
 import lombok.RequiredArgsConstructor;
@@ -212,6 +213,41 @@ public class StorageService {
                 : moveResource(fullFromPath, fullToPath, userId);
     }
 
+    public List<ResourceResponseDto> uploadResource(String path, List<MultipartFile> files, long userId) {
+        String fullPath = USER_DIR_TEMPLATE.formatted(userId) + path;
+        executeMinioOperationIgnoreNotFound(() -> minioRepository.statObject(fullPath))
+                .orElseThrow(() -> new DirectoryNotFoundException("Directory not found"));
+
+        List<SnowballObject> objects = new ArrayList<>();
+
+        for (MultipartFile file : files) {
+            String fileName = extractName(file.getOriginalFilename());
+            String uploadFilePath = fullPath + fileName;
+
+            if (executeMinioOperationIgnoreNotFound(() -> minioRepository.statObject(uploadFilePath)).isPresent()) {
+                throw new ResourceAlreadyExistsException("File '%s' already exists".formatted(fileName));
+            }
+
+            try {
+                objects.add(new SnowballObject(uploadFilePath, file.getInputStream(), file.getSize(), null));
+            } catch (IOException e) {
+                throw new ResourceUploadException("Error reading file '%s'".formatted(fileName));
+            }
+        }
+
+        executeMinioOperation(() -> minioRepository.uploadSnowballObject(objects), "uploading files");
+
+        List<ResourceResponseDto> result = new ArrayList<>();
+
+        for (MultipartFile file : files) {
+            String fileName = extractName(file.getOriginalFilename());
+            String responsePath = removeLastSlash(path);
+            result.add(new FileResponseDto(responsePath, fileName, file.getSize()));
+        }
+
+        return result;
+    }
+
     private ResourceResponseDto moveResource(String fullFromPath, String fullToPath, long userId) {
         if (fullFromPath.endsWith("/")) {
             executeMinioOperation(() -> minioRepository.createEmptyDirectory(fullToPath), "creating target directory");
@@ -245,16 +281,20 @@ public class StorageService {
 
 
     private ResourceResponseDto createResponse(String fullPath, long userId) {
-        String parentPath = getParentPath(fullPath, userId);
-        String parentPathWithoutUserDir = parentPath
-                .replaceFirst(USER_DIR_PATTERN, EMPTY);
-        String responsePath = removeLastSlash(parentPathWithoutUserDir);
+        String responsePath = getResponsePath(fullPath, userId);
 
         StatObjectResponse stat = executeMinioOperationIgnoreNotFound(() -> minioRepository.statObject(fullPath)).get();
 
         return fullPath.endsWith("/")
                 ? new DirectoryResponseDto(responsePath, extractName(fullPath))
                 : new FileResponseDto(responsePath, extractName(fullPath), stat.size());
+    }
+
+    private String getResponsePath(String fullPath, long userId) {
+        String parentPath = getParentPath(fullPath, userId);
+        String parentPathWithoutUserDir = parentPath
+                .replaceFirst(USER_DIR_PATTERN, EMPTY);
+        return removeLastSlash(parentPathWithoutUserDir);
     }
 
     private void copyDirectoryRecursively(String from, String to) {

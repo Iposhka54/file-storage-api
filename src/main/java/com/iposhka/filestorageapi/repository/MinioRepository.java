@@ -12,6 +12,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 
 @Repository
 @RequiredArgsConstructor
@@ -74,19 +75,26 @@ public class MinioRepository {
 
     public void deleteObject(String fullPath) throws MinioException, IOException, NoSuchAlgorithmException, InvalidKeyException {
         minioClient.removeObject(RemoveObjectArgs.builder()
-                        .bucket(rootBucket)
-                        .object(fullPath)
+                .bucket(rootBucket)
+                .object(fullPath)
                 .build());
     }
 
     public void copyObject(String from, String to) throws MinioException, IOException, NoSuchAlgorithmException, InvalidKeyException {
         minioClient.copyObject(CopyObjectArgs.builder()
+                .bucket(rootBucket)
+                .object(to)
+                .source(CopySource.builder()
                         .bucket(rootBucket)
-                        .object(to)
-                        .source(CopySource.builder()
-                                .bucket(rootBucket)
-                                .object(from)
-                                .build())
+                        .object(from)
+                        .build())
+                .build());
+    }
+
+    public void uploadSnowballObject(List<SnowballObject> objects) throws MinioException, IOException, NoSuchAlgorithmException, InvalidKeyException {
+        minioClient.uploadSnowballObjects(UploadSnowballObjectsArgs.builder()
+                .bucket(rootBucket)
+                .objects(objects)
                 .build());
     }
 }

@@ -3,14 +3,15 @@ package com.iposhka.filestorageapi.controller;
 import com.iposhka.filestorageapi.dto.responce.resourse.DownloadResourceDto;
 import com.iposhka.filestorageapi.dto.responce.resourse.ResourceResponseDto;
 import com.iposhka.filestorageapi.service.StorageService;
-import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -47,7 +48,7 @@ public class ResourceController {
 
     @GetMapping("/search")
     public ResponseEntity<List<ResourceResponseDto>> searchResource(@RequestParam String query,
-                                                                     @SessionAttribute long userId) {
+                                                                    @SessionAttribute long userId) {
         List<ResourceResponseDto> resources = storageService.searchResource(query, userId);
         return ResponseEntity.ok().body(resources);
     }
@@ -58,5 +59,14 @@ public class ResourceController {
                                                             @SessionAttribute long userId) {
         ResourceResponseDto resourceResponseDto = storageService.moveOrRenameResource(from, to, userId);
         return ResponseEntity.ok(resourceResponseDto);
+    }
+
+    @PostMapping
+    public ResponseEntity<List<ResourceResponseDto>> uploadResource(@RequestParam String path,
+                                                                    @RequestPart("object") List<MultipartFile> files,
+                                                                    @SessionAttribute long userId) {
+        List<ResourceResponseDto> resources = storageService.uploadResource(path, files, userId);
+        return ResponseEntity.created(URI.create(path))
+                .body(resources);
     }
 }

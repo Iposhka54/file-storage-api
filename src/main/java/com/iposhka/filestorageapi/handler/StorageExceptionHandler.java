@@ -13,7 +13,8 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 public class StorageExceptionHandler {
 
     @ExceptionHandler({InvalidPathFolderException.class,
-            InvalidResourcePathException.class})
+            InvalidResourcePathException.class,
+            ResourceUploadException.class})
     public ResponseEntity<ErrorResponseDto> handleNotValidPathException(Exception e) {
         ErrorResponseDto errorResponseDto = new ErrorResponseDto(e.getMessage());
         return ResponseEntity.badRequest().body(errorResponseDto);
