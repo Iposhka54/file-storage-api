@@ -5,6 +5,7 @@ import com.iposhka.filestorageapi.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
@@ -17,6 +18,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+
+import static org.springframework.http.HttpStatus.NO_CONTENT;
 
 @Configuration
 @RequiredArgsConstructor
@@ -34,7 +37,15 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
                 .exceptionHandling(handling -> handling
                         .authenticationEntryPoint(authenticationEntryPoint))
-                .formLogin(AbstractHttpConfigurer::disable);
+                .formLogin(AbstractHttpConfigurer::disable)
+                .logout(logout -> logout
+                        .logoutUrl("/api/auth/sign-out")
+                        .clearAuthentication(true)
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID")
+                        .logoutSuccessHandler((req, res, auth) -> {
+                            res.setStatus(NO_CONTENT.value());
+                        }));
 
         return http.build();
     }
