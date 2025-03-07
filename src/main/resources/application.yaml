@@ -1,4 +1,7 @@
 spring:
+  session:
+    timeout: 30d
+
   mvc:
     dispatch-trace-request: true
 

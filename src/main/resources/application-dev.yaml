@@ -1,4 +1,7 @@
 spring:
+  session:
+    timeout: 5m
+
   jpa:
     properties:
       hibernate:
