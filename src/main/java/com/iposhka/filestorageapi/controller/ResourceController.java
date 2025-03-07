@@ -29,7 +29,7 @@ public class ResourceController {
     }
 
     @DeleteMapping
-    public ResponseEntity<ResourceResponseDto> deleteResource(@RequestParam String path,
+    public ResponseEntity<Void> deleteResource(@RequestParam String path,
                                                               @SessionAttribute long userId) {
         storageService.deleteResource(path, userId);
         return ResponseEntity.noContent().build();
