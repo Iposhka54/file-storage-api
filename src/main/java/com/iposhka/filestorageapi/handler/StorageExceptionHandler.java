@@ -5,6 +5,7 @@ import com.iposhka.filestorageapi.exception.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
@@ -14,7 +15,8 @@ public class StorageExceptionHandler {
 
     @ExceptionHandler({InvalidPathFolderException.class,
             InvalidResourcePathException.class,
-            ResourceUploadException.class})
+            ResourceUploadException.class,
+            MaxUploadSizeExceededException.class})
     public ResponseEntity<ErrorResponseDto> handleNotValidPathException(Exception e) {
         ErrorResponseDto errorResponseDto = new ErrorResponseDto(e.getMessage());
         return ResponseEntity.badRequest().body(errorResponseDto);
