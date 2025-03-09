@@ -77,7 +77,7 @@ public class StorageService {
         return result;
     }
 
-    public DirectoryResponseDto createEmptyDirectory(String path, long userId) {
+    public DirectoryResponseDto createDirectory(String path, long userId) {
         String fullPath = validateAndBuildPath(path, userId);
         String parentPath = getParentPath(fullPath, userId);
 
