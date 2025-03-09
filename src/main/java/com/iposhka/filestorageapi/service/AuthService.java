@@ -13,7 +13,6 @@ import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -68,8 +67,6 @@ public class AuthService {
         AppUser user = userMapper.userRequestDtoToAppUser(userRequestDto);
         try {
             userRepository.save(user);
-        } catch (DataIntegrityViolationException e) {
-            throw new UserAlreadyExistsException("User with that username already exists");
         } catch (Exception e) {
             throw new DatabaseException("Any problem with database when register");
         }

@@ -24,7 +24,9 @@ public class AuthController {
     public ResponseEntity<UserResponseDto> signIn(@RequestBody @Valid UserRequestDto userRequestDto,
                                                   HttpServletRequest req) {
         UserResponseDto userResponseDto = authService.login(userRequestDto, req);
+
         req.getSession().setAttribute("userId", userResponseDto.getId());
+
         return ResponseEntity.ok(userResponseDto);
     }
 

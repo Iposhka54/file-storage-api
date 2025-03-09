@@ -1,0 +1,38 @@
+spring:
+  session:
+    timeout: 30d
+
+  mvc:
+    dispatch-trace-request: true
+
+  web:
+    resources:
+      add-mappings: false
+
+  application:
+    name: file-storage-api-test
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/file-storage
+    username: test
+    password: test
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        hbm2ddl:
+          auto: update
+
+  servlet:
+    multipart:
+      max-file-size: 512MB
+      max-request-size: 512MB
+
+minio:
+  rootBucket: bucket
+  url: http://localhost:9000
+  credentials:
+    accessKey: test
+    secretKey: test1234
