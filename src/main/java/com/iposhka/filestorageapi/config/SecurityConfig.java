@@ -5,7 +5,6 @@ import com.iposhka.filestorageapi.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
@@ -58,7 +57,12 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOrigins(List.of(
-                "http://localhost"
+                "http://localhost:80",
+                "http://localhost",
+                "http://frontend",
+                "http://frontend:80",
+                "http://103.71.22.38",
+                "http://103.71.22.38:80"
         ));
         configuration.addAllowedMethod("*");
         configuration.addAllowedHeader("*");
