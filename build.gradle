@@ -44,3 +44,13 @@ test {
 wrapper{
     gradleVersion '8.12.1'
 }
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 17
+    options.encoding = 'UTF-8'
+}
+
+bootJar {
+    archiveBaseName = 'storage'
+    archiveVersion = '1.0'
+}
