@@ -1,12 +1,13 @@
 package com.iposhka.filestorageapi.service;
 
+import com.iposhka.filestorageapi.config.security.CustomUserService;
 import com.iposhka.filestorageapi.dto.request.UserRequestDto;
 import com.iposhka.filestorageapi.dto.responce.UserResponseDto;
 import com.iposhka.filestorageapi.exception.DatabaseException;
 import com.iposhka.filestorageapi.exception.UserAlreadyExistsException;
 import com.iposhka.filestorageapi.exception.UserNotExistsException;
 import com.iposhka.filestorageapi.mapper.UserMapper;
-import com.iposhka.filestorageapi.model.AppUser;
+import com.iposhka.filestorageapi.model.User;
 import com.iposhka.filestorageapi.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -32,7 +33,7 @@ import java.util.Optional;
 @Transactional
 public class AuthService {
     private final UserRepository userRepository;
-    private final UserService userService;
+    private final CustomUserService userService;
     private final StorageService storageService;
     private final UserMapper userMapper;
     private final AuthenticationManager authenticationManager;
@@ -49,8 +50,8 @@ public class AuthService {
 
     @NotNull
     private UserResponseDto setIdInUserResponseDto(UserRequestDto userRequestDto) {
-        Optional<AppUser> maybeUser = userRepository.findByUsername(userRequestDto.getUsername());
-        AppUser user = maybeUser.orElseThrow(() -> new UserNotExistsException("User not found"));
+        Optional<User> maybeUser = userRepository.findByUsername(userRequestDto.getUsername());
+        User user = maybeUser.orElseThrow(() -> new UserNotExistsException("User not found"));
 
         UserResponseDto userResponseDto = userMapper.userRequestDtoToUserResponseDto(userRequestDto);
         userResponseDto.setId(user.getId());
@@ -64,7 +65,7 @@ public class AuthService {
 
         userRequestDto.setPassword(passwordEncoder.encode(userRequestDto.getPassword()));
 
-        AppUser user = userMapper.userRequestDtoToAppUser(userRequestDto);
+        User user = userMapper.userRequestDtoToAppUser(userRequestDto);
         try {
             userRepository.save(user);
         } catch (Exception e) {

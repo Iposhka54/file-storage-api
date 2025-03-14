@@ -1,4 +1,4 @@
-package com.iposhka.filestorageapi.config;
+package com.iposhka.filestorageapi.config.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

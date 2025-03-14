@@ -1,4 +1,4 @@
-package com.iposhka.filestorageapi.config;
+package com.iposhka.filestorageapi.config.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iposhka.filestorageapi.dto.responce.ErrorResponseDto;

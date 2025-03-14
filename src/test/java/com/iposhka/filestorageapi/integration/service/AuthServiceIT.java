@@ -4,7 +4,7 @@ import com.iposhka.filestorageapi.dto.request.UserRequestDto;
 import com.iposhka.filestorageapi.dto.responce.UserResponseDto;
 import com.iposhka.filestorageapi.exception.UserAlreadyExistsException;
 import com.iposhka.filestorageapi.integration.IntegrationTestBase;
-import com.iposhka.filestorageapi.model.AppUser;
+import com.iposhka.filestorageapi.model.User;
 import com.iposhka.filestorageapi.repository.MinioRepository;
 import com.iposhka.filestorageapi.repository.UserRepository;
 import com.iposhka.filestorageapi.service.AuthService;
@@ -61,10 +61,10 @@ class AuthServiceIT extends IntegrationTestBase {
             MockHttpServletRequest req = new MockHttpServletRequest();
             UserResponseDto actualResult = authService.registration(yaroslav, req);
 
-            Optional<AppUser> maybeYaroslav = userRepository.findByUsername(yaroslav.getUsername());
+            Optional<User> maybeYaroslav = userRepository.findByUsername(yaroslav.getUsername());
             assertTrue(maybeYaroslav.isPresent(), "User should be saved in the database");
 
-            AppUser yaroslav = maybeYaroslav.get();
+            User yaroslav = maybeYaroslav.get();
             assertEquals(yaroslav.getUsername(), actualResult.getUsername(), "Usernames should match");
 
             SecurityContext context = (SecurityContext) req.getSession().getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
@@ -98,11 +98,11 @@ class AuthServiceIT extends IntegrationTestBase {
     @Nested
     @DisplayName("Tests for login user")
     class LoginTests {
-        private AppUser user;
+        private User user;
 
         @BeforeEach
         public void saveUser() {
-            user = new AppUser();
+            user = new User();
             user.setUsername("Yaroslav");
             user.setPassword(passwordEncoder.encode("12345678"));
             userRepository.save(user);
