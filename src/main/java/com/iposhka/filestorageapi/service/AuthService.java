@@ -7,7 +7,7 @@ import com.iposhka.filestorageapi.exception.DatabaseException;
 import com.iposhka.filestorageapi.exception.UserAlreadyExistsException;
 import com.iposhka.filestorageapi.exception.UserNotExistsException;
 import com.iposhka.filestorageapi.mapper.UserMapper;
-import com.iposhka.filestorageapi.model.User;
+import com.iposhka.filestorageapi.model.UserApp;
 import com.iposhka.filestorageapi.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -50,11 +50,11 @@ public class AuthService {
 
     @NotNull
     private UserResponseDto setIdInUserResponseDto(UserRequestDto userRequestDto) {
-        Optional<User> maybeUser = userRepository.findByUsername(userRequestDto.getUsername());
-        User user = maybeUser.orElseThrow(() -> new UserNotExistsException("User not found"));
+        Optional<UserApp> maybeUser = userRepository.findByUsername(userRequestDto.getUsername());
+        UserApp userApp = maybeUser.orElseThrow(() -> new UserNotExistsException("User not found"));
 
         UserResponseDto userResponseDto = userMapper.userRequestDtoToUserResponseDto(userRequestDto);
-        userResponseDto.setId(user.getId());
+        userResponseDto.setId(userApp.getId());
         return userResponseDto;
     }
 
@@ -65,14 +65,14 @@ public class AuthService {
 
         userRequestDto.setPassword(passwordEncoder.encode(userRequestDto.getPassword()));
 
-        User user = userMapper.userRequestDtoToAppUser(userRequestDto);
+        UserApp userApp = userMapper.userRequestDtoToAppUser(userRequestDto);
         try {
-            userRepository.save(user);
+            userRepository.save(userApp);
         } catch (Exception e) {
             throw new DatabaseException("Any problem with database when register");
         }
 
-        UserResponseDto userResponseDto = userMapper.appUserToUserResponseDto(user);
+        UserResponseDto userResponseDto = userMapper.appUserToUserResponseDto(userApp);
 
         UserDetails userDetails = userService.loadUserByUsername(userResponseDto.getUsername());
 

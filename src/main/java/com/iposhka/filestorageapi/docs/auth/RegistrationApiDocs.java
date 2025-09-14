@@ -4,13 +4,11 @@ import com.iposhka.filestorageapi.dto.request.UserRequestDto;
 import com.iposhka.filestorageapi.dto.responce.ErrorResponseDto;
 import com.iposhka.filestorageapi.dto.responce.UserResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -20,7 +18,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Operation(
         summary = "User registration",
-        description = "Registers a new user and starts a session",
+        description = "Registers a new userApp and starts a session",
         requestBody = @RequestBody(
                 description = "User registration request",
                 content = @Content(

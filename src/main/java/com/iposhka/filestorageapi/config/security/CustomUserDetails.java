@@ -1,6 +1,6 @@
 package com.iposhka.filestorageapi.config.security;
 
-import com.iposhka.filestorageapi.model.User;
+import com.iposhka.filestorageapi.model.UserApp;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -14,7 +14,7 @@ import java.util.List;
 @Setter
 @AllArgsConstructor
 public class CustomUserDetails implements UserDetails {
-    private User user;
+    private UserApp userApp;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -23,11 +23,11 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public String getPassword() {
-        return user.getPassword();
+        return userApp.getPassword();
     }
 
     @Override
     public String getUsername() {
-        return user.getUsername();
+        return userApp.getUsername();
     }
 }

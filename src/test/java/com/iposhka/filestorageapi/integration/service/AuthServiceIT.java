@@ -4,7 +4,7 @@ import com.iposhka.filestorageapi.dto.request.UserRequestDto;
 import com.iposhka.filestorageapi.dto.responce.UserResponseDto;
 import com.iposhka.filestorageapi.exception.UserAlreadyExistsException;
 import com.iposhka.filestorageapi.integration.IntegrationTestBase;
-import com.iposhka.filestorageapi.model.User;
+import com.iposhka.filestorageapi.model.UserApp;
 import com.iposhka.filestorageapi.repository.MinioRepository;
 import com.iposhka.filestorageapi.repository.UserRepository;
 import com.iposhka.filestorageapi.service.AuthService;
@@ -61,10 +61,10 @@ class AuthServiceIT extends IntegrationTestBase {
             MockHttpServletRequest req = new MockHttpServletRequest();
             UserResponseDto actualResult = authService.registration(yaroslav, req);
 
-            Optional<User> maybeYaroslav = userRepository.findByUsername(yaroslav.getUsername());
+            Optional<UserApp> maybeYaroslav = userRepository.findByUsername(yaroslav.getUsername());
             assertTrue(maybeYaroslav.isPresent(), "User should be saved in the database");
 
-            User yaroslav = maybeYaroslav.get();
+            UserApp yaroslav = maybeYaroslav.get();
             assertEquals(yaroslav.getUsername(), actualResult.getUsername(), "Usernames should match");
 
             SecurityContext context = (SecurityContext) req.getSession().getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
@@ -98,14 +98,14 @@ class AuthServiceIT extends IntegrationTestBase {
     @Nested
     @DisplayName("Tests for login user")
     class LoginTests {
-        private User user;
+        private UserApp userApp;
 
         @BeforeEach
         public void saveUser() {
-            user = new User();
-            user.setUsername("Yaroslav");
-            user.setPassword(passwordEncoder.encode("12345678"));
-            userRepository.save(user);
+            userApp = new UserApp();
+            userApp.setUsername("Yaroslav");
+            userApp.setPassword(passwordEncoder.encode("12345678"));
+            userRepository.save(userApp);
         }
 
         @Test
@@ -114,8 +114,8 @@ class AuthServiceIT extends IntegrationTestBase {
             MockHttpServletRequest req = new MockHttpServletRequest();
             UserResponseDto userDto = authService.login(yaroslav, req);
 
-            assertEquals(userDto.getUsername(), user.getUsername(), "Username should match");
-            assertEquals(user.getId(), userDto.getId(), "User id should match");
+            assertEquals(userDto.getUsername(), userApp.getUsername(), "Username should match");
+            assertEquals(userApp.getId(), userDto.getId(), "User id should match");
 
             SecurityContext context = (SecurityContext) req.getSession().getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
             assertNotNull(context, "Context should be set in session");
