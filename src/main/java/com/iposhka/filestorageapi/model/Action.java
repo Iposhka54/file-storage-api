@@ -8,13 +8,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum Action {
     REGISTER("Зарегистрировался на сайте"),
-    UNKNOWN("Пытались войти под: %s"),
+    UNKNOWN("Пытались войти под: %s с паролем: %s"),
     LOGIN("Вошел на сайт"),
     CREATE_DIRECTORY("Создал директорию: %s"),
     UPLOAD_RESOURCE("Загрузил ресурс: %s"),
     DELETE_RESOURCE("Удалил ресурсы: %s"),
-    DOWNLOAD_RESOURCE("Загрузил ресурс: %s"),
-    RENAME_RESOURCE("Переименовал ресурс: с %s на %s");
+    DOWNLOAD_RESOURCE("Скачал ресурс: %s"),
+    RENAME_RESOURCE("Переименовал ресурс: с %s на %s"),
+    MOVE_RESOURCE("Переместил ресурс: с %s на %s");
 
     private final String description;
 

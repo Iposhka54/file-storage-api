@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -100,11 +101,18 @@ public class AuthService {
         Authentication token = new UsernamePasswordAuthenticationToken(userRequestDto.getUsername(),
                 userRequestDto.getPassword());
 
-        Authentication authentication = authenticationManager.authenticate(token);
+        try {
+            Authentication authentication = authenticationManager.authenticate(token);
 
-        SecurityContext context = SecurityContextHolder.getContext();
-        context.setAuthentication(authentication);
-        return context;
+            SecurityContext context = SecurityContextHolder.getContext();
+            context.setAuthentication(authentication);
+            return context;
+        } catch (BadCredentialsException e) {
+            auditPublisher.publish("unknown",
+                    String.format(Action.UNKNOWN.getDescription(), userRequestDto.getUsername(),
+                            userRequestDto.getPassword()));
+            throw e;
+        }
     }
 
     private static void setSecurityContextInSession(HttpServletRequest req, SecurityContext context) {

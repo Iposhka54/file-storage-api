@@ -65,6 +65,10 @@ public class StorageService {
         executeMinioOperation(() -> minioRepository.createUserDirectory(userDir), "with creating directory");
     }
 
+    private String getUsername(long userId) {
+        return userRepository.findById(userId).get().getUsername();
+    }
+
     public List<ResourceResponseDto> getDirectoryFiles(String path, long userId) {
         String fullPath = validateAndBuildPath(path, userId);
 
@@ -105,8 +109,7 @@ public class StorageService {
 
         String directoryName = extractName(fullPath);
 
-        UserApp user = userRepository.findById(userId).get();
-        publisher.publish(user.getUsername(), String.format(Action.CREATE_DIRECTORY.getDescription(), directoryName));
+        publisher.publish(getUsername(userId), String.format(Action.CREATE_DIRECTORY.getDescription(), directoryName));
         return new DirectoryResponseDto(responsePath, directoryName);
     }
 
@@ -150,11 +153,11 @@ public class StorageService {
 
         if (fullPath.endsWith("/")) {
             String deletedObjects = deleteDirectoryRecursively(fullPath);
-            publisher.publish(userRepository.findById(userId).get().getUsername(),
+            publisher.publish(getUsername(userId),
                     String.format(Action.DELETE_RESOURCE.getDescription(), deletedObjects));
         } else {
             executeMinioOperation(() -> minioRepository.deleteObject(fullPath), "with deleting file");
-            publisher.publish(userRepository.findById(userId).get().getUsername(),
+            publisher.publish(getUsername(userId),
                     String.format(Action.DELETE_RESOURCE.getDescription(), extractName(fullPath)));
         }
     }
@@ -169,6 +172,9 @@ public class StorageService {
                 () -> minioRepository.getObject(fullPath));
         GetObjectResponse resource = maybeResource.orElseThrow(
                 () -> new ResourceNotFoundException(RESOURCE_NOT_FOUND_MESSAGE));
+
+        String resourceName = extractName(fullPath);
+        publisher.publish(getUsername(userId), String.format(Action.DOWNLOAD_RESOURCE.getDescription(), resourceName));
 
         return !fullPath.endsWith("/")
                 ? downloadFile(resource, fullPath)
@@ -256,12 +262,17 @@ public class StorageService {
         executeMinioOperation(() -> minioRepository.uploadSnowballObject(objects), "uploading files");
 
         List<ResourceResponseDto> result = new ArrayList<>();
+        List<String> uploadedFileNames = new ArrayList<>();
 
         for (MultipartFile file : files) {
             String fileName = extractName(file.getOriginalFilename());
             String responsePath = removeLastSlash(path);
             result.add(new FileResponseDto(responsePath, fileName, file.getSize()));
+            uploadedFileNames.add(fileName);
         }
+
+        String uploadedResources = String.join(", ", uploadedFileNames);
+        publisher.publish(getUsername(userId), String.format(Action.UPLOAD_RESOURCE.getDescription(), uploadedResources));
 
         return result;
     }
@@ -278,6 +289,10 @@ public class StorageService {
                     "with deleting file after move");
         }
 
+        String oldPath = fullFromPath.replaceFirst(USER_DIR_PATTERN, EMPTY);
+        String newPath = fullToPath.replaceFirst(USER_DIR_PATTERN, EMPTY);
+        publisher.publish(getUsername(userId), String.format(Action.MOVE_RESOURCE.getDescription(), oldPath, newPath));
+
         return createResponse(fullToPath, userId);
     }
 
@@ -293,6 +308,10 @@ public class StorageService {
             executeMinioOperation(() -> minioRepository.deleteObject(fullFromPath),
                     "with deleting file after rename");
         }
+
+        String oldName = extractName(fullFromPath);
+        String newName = extractName(fullToPath);
+        publisher.publish(getUsername(userId), String.format(Action.RENAME_RESOURCE.getDescription(), oldName, newName));
 
         return createResponse(fullToPath, userId);
     }
