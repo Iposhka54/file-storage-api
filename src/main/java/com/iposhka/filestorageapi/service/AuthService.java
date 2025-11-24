@@ -6,7 +6,9 @@ import com.iposhka.filestorageapi.dto.responce.UserResponseDto;
 import com.iposhka.filestorageapi.exception.DatabaseException;
 import com.iposhka.filestorageapi.exception.UserAlreadyExistsException;
 import com.iposhka.filestorageapi.exception.UserNotExistsException;
+import com.iposhka.filestorageapi.listener.AuditPublisher;
 import com.iposhka.filestorageapi.mapper.UserMapper;
+import com.iposhka.filestorageapi.model.Action;
 import com.iposhka.filestorageapi.model.UserApp;
 import com.iposhka.filestorageapi.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,18 +34,22 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Transactional
 public class AuthService {
+
     private final UserRepository userRepository;
     private final CustomUserService userService;
     private final StorageService storageService;
     private final UserMapper userMapper;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
+    private final AuditPublisher auditPublisher;
 
     public UserResponseDto login(UserRequestDto userRequestDto, HttpServletRequest req) {
 
         SecurityContext context = authenticateUser(userRequestDto);
 
         setSecurityContextInSession(req, context);
+
+        auditPublisher.publish(userRequestDto.getUsername(), Action.LOGIN.getDescription());
 
         return setIdInUserResponseDto(userRequestDto);
     }
@@ -76,7 +82,8 @@ public class AuthService {
 
         UserDetails userDetails = userService.loadUserByUsername(userResponseDto.getUsername());
 
-        Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+        Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null,
+                userDetails.getAuthorities());
 
         SecurityContext context = SecurityContextHolder.getContext();
         context.setAuthentication(authentication);
@@ -84,12 +91,14 @@ public class AuthService {
         setSecurityContextInSession(request, context);
 
         storageService.createUserDirectory(userResponseDto.getId());
+        auditPublisher.publish(userRequestDto.getUsername(), Action.REGISTER.getDescription());
 
         return userResponseDto;
     }
 
     private SecurityContext authenticateUser(UserRequestDto userRequestDto) {
-        Authentication token = new UsernamePasswordAuthenticationToken(userRequestDto.getUsername(), userRequestDto.getPassword());
+        Authentication token = new UsernamePasswordAuthenticationToken(userRequestDto.getUsername(),
+                userRequestDto.getPassword());
 
         Authentication authentication = authenticationManager.authenticate(token);
 

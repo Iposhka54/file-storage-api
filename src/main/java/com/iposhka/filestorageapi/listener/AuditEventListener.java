@@ -1,0 +1,26 @@
+package com.iposhka.filestorageapi.listener;
+
+import com.iposhka.filestorageapi.model.UserActionAudit;
+import com.iposhka.filestorageapi.repository.UserActionAuditRepository;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Component;
+
+@Component
+@RequiredArgsConstructor
+public class AuditEventListener {
+
+    private final UserActionAuditRepository userActionAuditRepository;
+
+    @EventListener
+    @Transactional
+    public void handleAuditEvent(AuditEvent event) {
+
+        UserActionAudit log = UserActionAudit.builder()
+                .username(event.username())
+                .action(event.action())
+                .build();
+        userActionAuditRepository.save(log);
+    }
+}

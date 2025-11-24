@@ -6,24 +6,24 @@ Multi-tenant file cloud. Users of the service can use it to upload and store fil
 ### Backend
 
 ![java](https://github.com/VladislavLevchikIsAProger/tennis_scoreboard/assets/153897612/bc1ab298-7a78-42ec-8813-05b38668310e)
-![spring-boot](https://github.com/user-attachments/assets/ffd33770-caf6-48b0-afbe-d49b22066aa4)
-![spring-data-jpa](https://github.com/user-attachments/assets/7e5259f6-1797-4193-a8c8-e465c5f7d9be)
-![spring-security](https://github.com/user-attachments/assets/cddf0433-6e43-4622-a97d-e911d9c19e06)
-![spring-sessions](https://github.com/user-attachments/assets/21b706ef-b486-4a4d-91be-2170b5f54a00)
-![gradle](https://github.com/user-attachments/assets/65cd889b-5438-461f-afef-a04d569660b0)
-![liquibase](https://github.com/user-attachments/assets/77c537b5-0a7b-4841-b6ae-20317ca9eea0)
+![spring-boot](https://github.com/userApp-attachments/assets/ffd33770-caf6-48b0-afbe-d49b22066aa4)
+![spring-data-jpa](https://github.com/userApp-attachments/assets/7e5259f6-1797-4193-a8c8-e465c5f7d9be)
+![spring-security](https://github.com/userApp-attachments/assets/cddf0433-6e43-4622-a97d-e911d9c19e06)
+![spring-sessions](https://github.com/userApp-attachments/assets/21b706ef-b486-4a4d-91be-2170b5f54a00)
+![gradle](https://github.com/userApp-attachments/assets/65cd889b-5438-461f-afef-a04d569660b0)
+![liquibase](https://github.com/userApp-attachments/assets/77c537b5-0a7b-4841-b6ae-20317ca9eea0)
 ![hibernate](https://github.com/VladislavLevchikIsAProger/tennis_scoreboard/assets/153897612/071df0a5-79ef-4435-9c98-5a9b2383d420)
 
 ### Data
 
-![minio](https://github.com/user-attachments/assets/ce6c904c-0f05-4b7f-9766-68bbd8e3a766)
+![minio](https://github.com/userApp-attachments/assets/ce6c904c-0f05-4b7f-9766-68bbd8e3a766)
 ![postgresql](https://github.com/VladislavLevchikIsAProger/weather_tracker/assets/153897612/8922bdba-ad57-4d69-b68c-ec505fff82e0)
-![redis](https://github.com/user-attachments/assets/f5d8cd30-35f5-4524-a374-985dd400d030)
+![redis](https://github.com/userApp-attachments/assets/f5d8cd30-35f5-4524-a374-985dd400d030)
 
 ### Testing
 
 ![junit-logo](https://github.com/VladislavLevchikIsAProger/tennis_scoreboard/assets/153897612/a1a05826-fecb-4b7a-827c-946ffc72da32)
-![tcontainers](https://github.com/user-attachments/assets/b891d2aa-3463-4fcf-bed0-d0b509a9e79a)
+![tcontainers](https://github.com/userApp-attachments/assets/b891d2aa-3463-4fcf-bed0-d0b509a9e79a)
 
 ### Deploy
 
@@ -32,11 +32,11 @@ Multi-tenant file cloud. Users of the service can use it to upload and store fil
 
 ### Docs API
 
-![swagger](https://github.com/user-attachments/assets/71b28cf3-9941-4069-8c76-85016d1906ef)
+![swagger](https://github.com/userApp-attachments/assets/71b28cf3-9941-4069-8c76-85016d1906ef)
 
 ## Database diagram
 
-![diagram](https://github.com/user-attachments/assets/d1717dd0-a3fa-473e-9efb-6e60a907124c)
+![diagram](https://github.com/userApp-attachments/assets/d1717dd0-a3fa-473e-9efb-6e60a907124c)
 
 ## Swagger
 
@@ -62,7 +62,7 @@ You can test the application by going to http://localhost:8080/swagger-ui/index.
   
 + Open the console(Alt + F12) and type `docker-compose up -d`
   
-  ![Screen-cmd](https://github.com/user-attachments/assets/d8a7c78d-a070-4945-ace6-c7c71e29864b)
+  ![Screen-cmd](https://github.com/userApp-attachments/assets/d8a7c78d-a070-4945-ace6-c7c71e29864b)
 
 + Start project
 

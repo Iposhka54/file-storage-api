@@ -9,5 +9,4 @@ public class FileStorageApiApplication {
     public static void main(String[] args) {
         SpringApplication.run(FileStorageApiApplication.class, args);
     }
-
 }

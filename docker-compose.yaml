@@ -37,20 +37,20 @@ services:
     networks:
       - app-network
 
-  backend:
-    image: iposhka54/storage-backend:latest
-    container_name: backend-app
-    env_file:
-      - .env
-    restart: always
-    ports:
-      - "8080:8080"
-    depends_on:
-      - db
-      - minio
-      - redis
-    networks:
-      - app-network
+#  backend:
+#    image: iposhka54/storage-backend:latest
+#    container_name: backend-app
+#    env_file:
+#      - .env
+#    restart: always
+#    ports:
+#      - "8080:8080"
+#    depends_on:
+#      - db
+#      - minio
+#      - redis
+#    networks:
+#      - app-network
 
   frontend:
     image: iposhka54/storage-frontend:latest
@@ -58,8 +58,8 @@ services:
     restart: always
     ports:
       - "80:80"
-    depends_on:
-      - backend
+#    depends_on:
+#      - backend
     networks:
       - app-network
 

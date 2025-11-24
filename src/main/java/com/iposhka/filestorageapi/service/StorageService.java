@@ -5,12 +5,17 @@ import com.iposhka.filestorageapi.dto.responce.resourse.DownloadResourceDto;
 import com.iposhka.filestorageapi.dto.responce.resourse.FileResponseDto;
 import com.iposhka.filestorageapi.dto.responce.resourse.ResourceResponseDto;
 import com.iposhka.filestorageapi.exception.*;
+import com.iposhka.filestorageapi.listener.AuditPublisher;
+import com.iposhka.filestorageapi.model.Action;
+import com.iposhka.filestorageapi.model.UserApp;
 import com.iposhka.filestorageapi.repository.MinioRepository;
+import com.iposhka.filestorageapi.repository.UserRepository;
 import io.minio.GetObjectResponse;
 import io.minio.Result;
 import io.minio.SnowballObject;
 import io.minio.StatObjectResponse;
 import io.minio.messages.Item;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.stereotype.Service;
@@ -35,7 +40,11 @@ import static java.util.regex.Pattern.CASE_INSENSITIVE;
 @Service
 @RequiredArgsConstructor
 public class StorageService {
+
     private final MinioRepository minioRepository;
+    private final UserRepository userRepository;
+
+    private final AuditPublisher publisher;
 
     public static final String INVALID_PATH_ERROR_MESSAGE = "Path to resource not valid";
     public static final String DATABASE_ERROR_MESSAGE = "Any problems with database";
@@ -94,7 +103,11 @@ public class StorageService {
                 .replaceFirst(USER_DIR_PATTERN, EMPTY);
         String responsePath = removeLastSlash(parentPathWithoutUserDir);
 
-        return new DirectoryResponseDto(responsePath, extractName(fullPath));
+        String directoryName = extractName(fullPath);
+
+        UserApp user = userRepository.findById(userId).get();
+        publisher.publish(user.getUsername(), String.format(Action.CREATE_DIRECTORY.getDescription(), directoryName));
+        return new DirectoryResponseDto(responsePath, directoryName);
     }
 
     public ResourceResponseDto getInfoAboutResource(String path, long userId) {
@@ -136,9 +149,13 @@ public class StorageService {
         }
 
         if (fullPath.endsWith("/")) {
-            deleteDirectoryRecursively(fullPath);
+            String deletedObjects = deleteDirectoryRecursively(fullPath);
+            publisher.publish(userRepository.findById(userId).get().getUsername(),
+                    String.format(Action.DELETE_RESOURCE.getDescription(), deletedObjects));
         } else {
             executeMinioOperation(() -> minioRepository.deleteObject(fullPath), "with deleting file");
+            publisher.publish(userRepository.findById(userId).get().getUsername(),
+                    String.format(Action.DELETE_RESOURCE.getDescription(), extractName(fullPath)));
         }
     }
 
@@ -148,8 +165,10 @@ public class StorageService {
         }
         String fullPath = USER_DIR_TEMPLATE.formatted(userId) + path;
 
-        Optional<GetObjectResponse> maybeResource = executeMinioOperationIgnoreNotFound(() -> minioRepository.getObject(fullPath));
-        GetObjectResponse resource = maybeResource.orElseThrow(() -> new ResourceNotFoundException(RESOURCE_NOT_FOUND_MESSAGE));
+        Optional<GetObjectResponse> maybeResource = executeMinioOperationIgnoreNotFound(
+                () -> minioRepository.getObject(fullPath));
+        GetObjectResponse resource = maybeResource.orElseThrow(
+                () -> new ResourceNotFoundException(RESOURCE_NOT_FOUND_MESSAGE));
 
         return !fullPath.endsWith("/")
                 ? downloadFile(resource, fullPath)
@@ -312,7 +331,7 @@ public class StorageService {
         }
     }
 
-    private void deleteDirectoryRecursively(String path) {
+    private String deleteDirectoryRecursively(String path) {
         List<String> objectsToDelete = new ArrayList<>();
 
         for (Result<Item> itemResult : minioRepository.listObjects(path, NEED_RECURSIVE)) {
@@ -325,7 +344,11 @@ public class StorageService {
             executeMinioOperation(() -> minioRepository.deleteObject(objectName), "with deleting object");
         }
 
+        objectsToDelete.add(path);
+
         executeMinioOperation(() -> minioRepository.deleteObject(path), "while deleting empty directory");
+
+        return objectsToDelete.stream().collect(Collectors.joining(", ", "[", "]"));
     }
 
     private DownloadResourceDto downloadFile(GetObjectResponse resource, String fullPath) {
@@ -342,9 +365,12 @@ public class StorageService {
             for (Result<Item> itemResult : minioRepository.listObjects(fullPath, NEED_RECURSIVE)) {
                 Item item = executeMinioOperation(itemResult::get);
 
-                if (isMinioDirectoryObject(fullPath, item)) continue;
+                if (isMinioDirectoryObject(fullPath, item)) {
+                    continue;
+                }
 
-                GetObjectResponse fileResponse = executeMinioOperation(() -> minioRepository.getObject(item.objectName()));
+                GetObjectResponse fileResponse = executeMinioOperation(
+                        () -> minioRepository.getObject(item.objectName()));
 
                 zipOut.putNextEntry(new ZipEntry(item.objectName().replaceFirst(fullPath, EMPTY)));
                 try (InputStream inputStream = fileResponse) {
@@ -385,8 +411,8 @@ public class StorageService {
 
     private boolean isMinioDirectoryObject(String fullPath, Item item) {
         return fullPath.equals(item.objectName())
-               && !item.isDir()
-               && item.size() == 0;
+                && !item.isDir()
+                && item.size() == 0;
     }
 
     private boolean directoryExists(String path) {
@@ -410,7 +436,9 @@ public class StorageService {
     }
 
     private static String validateAndBuildPath(String path, long userId) {
-        if (path.isBlank()) return USER_DIR_TEMPLATE.formatted(userId);
+        if (path.isBlank()) {
+            return USER_DIR_TEMPLATE.formatted(userId);
+        }
         if (path.startsWith("/") || (!path.endsWith("/"))) {
             throw new InvalidPathFolderException(INVALID_PATH_ERROR_MESSAGE);
         }
@@ -419,7 +447,9 @@ public class StorageService {
 
     private static String getParentPath(String fullPath, long userId) {
         String rootPath = USER_DIR_TEMPLATE.formatted(userId);
-        if (fullPath.equals(rootPath)) return EMPTY;
+        if (fullPath.equals(rootPath)) {
+            return EMPTY;
+        }
         return fullPath.substring(0, fullPath.lastIndexOf('/', fullPath.length() - 2) + 1);
     }
 }
