@@ -19,6 +19,7 @@ import static org.springframework.http.HttpStatus.NO_CONTENT;
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
+
     private final CustomUserService userService;
     private final AuthenticationEntryPoint authenticationEntryPoint;
 
@@ -32,6 +33,7 @@ public class SecurityConfig {
                                 "/api/auth/sign-up",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html").permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .exceptionHandling(handling -> handling
                         .authenticationEntryPoint(authenticationEntryPoint))
@@ -56,9 +58,7 @@ public class SecurityConfig {
                 "http://localhost:80",
                 "http://localhost",
                 "http://frontend",
-                "http://frontend:80",
-                "http://103.71.22.38",
-                "http://103.71.22.38:80"
+                "http://frontend:80"
         ));
         configuration.addAllowedMethod("*");
         configuration.addAllowedHeader("*");
