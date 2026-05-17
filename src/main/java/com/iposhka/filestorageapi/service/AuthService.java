@@ -50,7 +50,8 @@ public class AuthService {
 
         setSecurityContextInSession(req, context);
 
-        auditPublisher.publish(userRequestDto.getUsername(), Action.LOGIN.getDescription());
+        log.info("User with username {} login", userRequestDto.getUsername());
+        auditPublisher.publish(userRequestDto.getUsername(), Action.LOGIN.getDescription(), Action.LOGIN);
 
         return setIdInUserResponseDto(userRequestDto);
     }
@@ -60,8 +61,7 @@ public class AuthService {
         Optional<UserApp> maybeUser = userRepository.findByUsername(userRequestDto.getUsername());
         UserApp userApp = maybeUser.orElseThrow(() -> new UserNotExistsException("User not found"));
 
-        UserResponseDto userResponseDto = userMapper.userRequestDtoToUserResponseDto(userRequestDto);
-        userResponseDto.setId(userApp.getId());
+        UserResponseDto userResponseDto = userMapper.appUserToUserResponseDto(userApp);
         return userResponseDto;
     }
 
@@ -92,7 +92,8 @@ public class AuthService {
         setSecurityContextInSession(request, context);
 
         storageService.createUserDirectory(userResponseDto.getId());
-        auditPublisher.publish(userRequestDto.getUsername(), Action.REGISTER.getDescription());
+        log.info("user with username {} registration", userRequestDto.getUsername());
+        auditPublisher.publish(userRequestDto.getUsername(), Action.REGISTER.getDescription(), Action.REGISTER);
 
         return userResponseDto;
     }
@@ -108,9 +109,12 @@ public class AuthService {
             context.setAuthentication(authentication);
             return context;
         } catch (BadCredentialsException e) {
+            log.info("unknown guest try login with username {} and password {}", userRequestDto.getUsername(),
+                    userRequestDto.getPassword());
             auditPublisher.publish("unknown",
                     String.format(Action.UNKNOWN.getDescription(), userRequestDto.getUsername(),
-                            userRequestDto.getPassword()));
+                            userRequestDto.getPassword()),
+                    Action.UNKNOWN);
             throw e;
         }
     }

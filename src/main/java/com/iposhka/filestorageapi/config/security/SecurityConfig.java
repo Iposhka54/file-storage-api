@@ -20,7 +20,6 @@ import static org.springframework.http.HttpStatus.NO_CONTENT;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final CustomUserService userService;
     private final AuthenticationEntryPoint authenticationEntryPoint;
 
     @Bean

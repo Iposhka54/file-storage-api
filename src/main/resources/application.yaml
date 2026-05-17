@@ -1,8 +1,8 @@
 spring:
   data:
     redis:
-      host: ${REDIS_HOST}
-      port: ${REDIS_PORT}
+      host: localhost
+      port: 6379
 
   session:
     timeout: 30d
@@ -18,9 +18,9 @@ spring:
     name: file-storage-api
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: postgres
+    password: postgres
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -29,6 +29,8 @@ spring:
       hibernate:
         hbm2ddl:
           auto: none
+        format_sql: false
+        show_sql: false
 
   servlet:
     multipart:
@@ -36,8 +38,8 @@ spring:
       max-request-size: 100MB
 
 minio:
-  rootBucket: ${ROOT_BUCKET}
-  url: ${MINIO_URL}
+  rootBucket: users
+  url: http:/localhost:9000
   credentials:
-    accessKey: ${MINIO_ACCESS_KEY}
-    secretKey: ${MINIO_SECRET_KEY}
+    accessKey: yarik
+    secretKey: 12345678

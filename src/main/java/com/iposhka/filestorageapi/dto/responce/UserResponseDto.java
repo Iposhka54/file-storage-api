@@ -1,6 +1,7 @@
 package com.iposhka.filestorageapi.dto.responce;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.iposhka.filestorageapi.model.Role;
 import lombok.Builder;
 import lombok.Data;
 
@@ -10,4 +11,5 @@ public class UserResponseDto {
     @JsonIgnore
     private long id;
     private String username;
+    private Role role;
 }

@@ -1,5 +1,7 @@
 package com.iposhka.filestorageapi.listener;
 
-public record AuditEvent(String username, String action) {
+import com.iposhka.filestorageapi.model.Action;
+
+public record AuditEvent(String username, String action, Action actionType) {
 
 }

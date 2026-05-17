@@ -7,6 +7,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.DynamicInsert;
+
+import static com.iposhka.filestorageapi.model.Role.USER;
 
 @Entity
 @Setter
@@ -15,6 +18,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 @Table(name = "users")
+@DynamicInsert
 public class UserApp implements Serializable {
 
     @Id
@@ -26,4 +30,15 @@ public class UserApp implements Serializable {
 
     @Column(nullable = false)
     private String password;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "VARCHAR(10) DEFAULT 'USER'")
+    private Role role;
+
+    @PostLoad
+    private void setDefaultRole() {
+        if (role == null) {
+            role = USER;
+        }
+    }
 }

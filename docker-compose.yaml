@@ -52,16 +52,16 @@ services:
 #    networks:
 #      - app-network
 
-  frontend:
-    image: iposhka54/storage-frontend:latest
-    container_name: frontend-app
-    restart: always
-    ports:
-      - "80:80"
-#    depends_on:
-#      - backend
-    networks:
-      - app-network
+#  frontend:
+#    image: iposhka54/storage-frontend:latest
+#    container_name: frontend-app
+#    restart: always
+#    ports:
+#      - "80:80"
+##    depends_on:
+##      - backend
+#    networks:
+#      - app-network
 
 networks:
   app-network:

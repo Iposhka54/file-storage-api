@@ -1,14 +1,18 @@
 package com.iposhka.filestorageapi.config.security;
 
+import com.iposhka.filestorageapi.model.Role;
 import com.iposhka.filestorageapi.model.UserApp;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
+
+import static com.iposhka.filestorageapi.model.Role.USER;
 
 @Getter
 @Setter
@@ -18,7 +22,8 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        Role role = userApp.getRole() != null ? userApp.getRole() : USER;
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
     @Override

@@ -17,6 +17,7 @@ import io.minio.StatObjectResponse;
 import io.minio.messages.Item;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,6 +38,7 @@ import static com.iposhka.filestorageapi.utils.MinioUtils.executeMinioOperation;
 import static com.iposhka.filestorageapi.utils.MinioUtils.executeMinioOperationIgnoreNotFound;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StorageService {
@@ -109,7 +111,9 @@ public class StorageService {
 
         String directoryName = extractName(fullPath);
 
-        publisher.publish(getUsername(userId), String.format(Action.CREATE_DIRECTORY.getDescription(), directoryName));
+        log.info("{} create directory with name: {}", getUsername(userId), directoryName);
+        publisher.publish(getUsername(userId), String.format(Action.CREATE_DIRECTORY.getDescription(), directoryName),
+                Action.CREATE_DIRECTORY);
         return new DirectoryResponseDto(responsePath, directoryName);
     }
 
@@ -153,12 +157,16 @@ public class StorageService {
 
         if (fullPath.endsWith("/")) {
             String deletedObjects = deleteDirectoryRecursively(fullPath);
+            log.info("{} delete resource with name: {}", getUsername(userId), deletedObjects);
             publisher.publish(getUsername(userId),
-                    String.format(Action.DELETE_RESOURCE.getDescription(), deletedObjects));
+                    String.format(Action.DELETE_RESOURCE.getDescription(), deletedObjects),
+                    Action.DELETE_RESOURCE);
         } else {
             executeMinioOperation(() -> minioRepository.deleteObject(fullPath), "with deleting file");
+            log.info("{} delete resource with name: {}", getUsername(userId), extractName(fullPath));
             publisher.publish(getUsername(userId),
-                    String.format(Action.DELETE_RESOURCE.getDescription(), extractName(fullPath)));
+                    String.format(Action.DELETE_RESOURCE.getDescription(), extractName(fullPath)),
+                    Action.DELETE_RESOURCE);
         }
     }
 
@@ -174,7 +182,9 @@ public class StorageService {
                 () -> new ResourceNotFoundException(RESOURCE_NOT_FOUND_MESSAGE));
 
         String resourceName = extractName(fullPath);
-        publisher.publish(getUsername(userId), String.format(Action.DOWNLOAD_RESOURCE.getDescription(), resourceName));
+        log.info("{} download resource with name: {}", getUsername(userId), resourceName);
+        publisher.publish(getUsername(userId), String.format(Action.DOWNLOAD_RESOURCE.getDescription(), resourceName),
+                Action.DOWNLOAD_RESOURCE);
 
         return !fullPath.endsWith("/")
                 ? downloadFile(resource, fullPath)
@@ -272,7 +282,9 @@ public class StorageService {
         }
 
         String uploadedResources = String.join(", ", uploadedFileNames);
-        publisher.publish(getUsername(userId), String.format(Action.UPLOAD_RESOURCE.getDescription(), uploadedResources));
+        log.info("{} upload resources: {}", getUsername(userId), uploadedResources);
+        publisher.publish(getUsername(userId),
+                String.format(Action.UPLOAD_RESOURCE.getDescription(), uploadedResources), Action.UPLOAD_RESOURCE);
 
         return result;
     }
@@ -291,7 +303,9 @@ public class StorageService {
 
         String oldPath = fullFromPath.replaceFirst(USER_DIR_PATTERN, EMPTY);
         String newPath = fullToPath.replaceFirst(USER_DIR_PATTERN, EMPTY);
-        publisher.publish(getUsername(userId), String.format(Action.MOVE_RESOURCE.getDescription(), oldPath, newPath));
+        log.info("{} delete resource with old Path: {} and new Path: {}", getUsername(userId), oldPath, newPath);
+        publisher.publish(getUsername(userId), String.format(Action.MOVE_RESOURCE.getDescription(), oldPath, newPath),
+                Action.MOVE_RESOURCE);
 
         return createResponse(fullToPath, userId);
     }
@@ -311,7 +325,9 @@ public class StorageService {
 
         String oldName = extractName(fullFromPath);
         String newName = extractName(fullToPath);
-        publisher.publish(getUsername(userId), String.format(Action.RENAME_RESOURCE.getDescription(), oldName, newName));
+        log.info("{} rename resource with old Name: {} and new Name: {}", getUsername(userId), oldName, newName);
+        publisher.publish(getUsername(userId), String.format(Action.RENAME_RESOURCE.getDescription(), oldName, newName),
+                Action.RENAME_RESOURCE);
 
         return createResponse(fullToPath, userId);
     }

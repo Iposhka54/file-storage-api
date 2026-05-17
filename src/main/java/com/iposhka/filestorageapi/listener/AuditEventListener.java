@@ -17,10 +17,12 @@ public class AuditEventListener {
     @EventListener
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleAuditEvent(AuditEvent event) {
+        Integer actionTypeOrdinal = event.actionType() != null ? event.actionType().ordinal() : null;
 
         UserActionAudit log = UserActionAudit.builder()
                 .username(event.username())
                 .action(event.action())
+                .actionType(actionTypeOrdinal)
                 .build();
         userActionAuditRepository.save(log);
     }
