@@ -10,9 +10,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class DirectoryResponseDto extends ResourceResponseDto {
 
-    public DirectoryResponseDto(String path, String name) {
+    public DirectoryResponseDto(String path, String name, long size) {
         this.path = path;
         this.name = name;
+        this.size = size;
         this.type = ResourceType.DIRECTORY;
     }
 }

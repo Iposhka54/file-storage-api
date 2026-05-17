@@ -5,6 +5,8 @@ import lombok.Data;
 
 @Data
 public abstract class ResourceResponseDto {
+
+    protected long size;
     protected String path;
     protected String name;
     protected ResourceType type;

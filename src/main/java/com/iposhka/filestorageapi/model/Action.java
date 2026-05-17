@@ -15,7 +15,10 @@ public enum Action {
     DELETE_RESOURCE("Удалил ресурсы: %s"),
     DOWNLOAD_RESOURCE("Скачал ресурс: %s"),
     RENAME_RESOURCE("Переименовал ресурс: с %s на %s"),
-    MOVE_RESOURCE("Переместил ресурс: с %s на %s");
+    MOVE_RESOURCE("Переместил ресурс: с %s на %s"),
+    MOVE_TO_TRASH("Переместил ресурс в корзину: %s"),
+    RESTORE_FROM_TRASH("Восстановил ресурс из корзины: %s"),
+    PERMANENTLY_DELETE("Окончательно удалил ресурс: %s");
 
     private final String description;
 

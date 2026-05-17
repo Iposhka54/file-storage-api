@@ -1,6 +1,9 @@
 package com.iposhka.filestorageapi.controller;
 
 import com.iposhka.filestorageapi.docs.resource.*;
+import com.iposhka.filestorageapi.dto.request.DeleteFromTrashRequestDto;
+import com.iposhka.filestorageapi.dto.request.MoveToTrashRequestDto;
+import com.iposhka.filestorageapi.dto.request.RestoreFromTrashRequestDto;
 import com.iposhka.filestorageapi.dto.responce.resourse.DownloadResourceDto;
 import com.iposhka.filestorageapi.dto.responce.resourse.ResourceResponseDto;
 import com.iposhka.filestorageapi.service.StorageService;
@@ -21,12 +24,13 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("api/resource")
 public class ResourceController {
+
     private final StorageService storageService;
 
     @GetResourceInfoApiDocs
     @GetMapping
     public ResponseEntity<ResourceResponseDto> getInfoAboutResource(@RequestParam String path,
-                                                                    @SessionAttribute long userId) {
+            @SessionAttribute long userId) {
         ResourceResponseDto resource = storageService.getInfoAboutResource(path, userId);
 
         return ResponseEntity.ok().body(resource);
@@ -35,7 +39,7 @@ public class ResourceController {
     @DeleteResourceApiDocs
     @DeleteMapping
     public ResponseEntity<Void> deleteResource(@RequestParam String path,
-                                               @SessionAttribute long userId) {
+            @SessionAttribute long userId) {
         storageService.deleteResource(path, userId);
         return ResponseEntity.noContent().build();
     }
@@ -43,7 +47,7 @@ public class ResourceController {
     @DownloadResourceApiDocs
     @GetMapping("/download")
     public ResponseEntity<Resource> downloadResource(@RequestParam String path,
-                                                     @SessionAttribute long userId) {
+            @SessionAttribute long userId) {
         DownloadResourceDto downloadResourceDto = storageService.downloadResource(path, userId);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
@@ -55,7 +59,7 @@ public class ResourceController {
     @SearchResourceApiDocs
     @GetMapping("/search")
     public ResponseEntity<List<ResourceResponseDto>> searchResource(@RequestParam String query,
-                                                                    @SessionAttribute long userId) {
+            @SessionAttribute long userId) {
         List<ResourceResponseDto> resources = storageService.searchResource(query, userId);
         return ResponseEntity.ok().body(resources);
     }
@@ -63,8 +67,8 @@ public class ResourceController {
     @MoveOrRenameResourceApiDocs
     @GetMapping("/move")
     public ResponseEntity<ResourceResponseDto> moveResource(@RequestParam String from,
-                                                            @RequestParam String to,
-                                                            @SessionAttribute long userId) {
+            @RequestParam String to,
+            @SessionAttribute long userId) {
         ResourceResponseDto resourceResponseDto = storageService.moveOrRenameResource(from, to, userId);
         return ResponseEntity.ok(resourceResponseDto);
     }
@@ -72,10 +76,55 @@ public class ResourceController {
     @UploadResourceApiDocs
     @PostMapping
     public ResponseEntity<List<ResourceResponseDto>> uploadResource(@RequestParam String path,
-                                                                    @RequestPart("object") List<MultipartFile> files,
-                                                                    @SessionAttribute long userId) {
+            @RequestPart("object") List<MultipartFile> files,
+            @SessionAttribute long userId) {
         List<ResourceResponseDto> resources = storageService.uploadResource(path, files, userId);
         return ResponseEntity.created(URI.create(path))
                 .body(resources);
+    }
+
+    @PostMapping("/trash")
+    public ResponseEntity<Void> moveToTrash(@RequestBody MoveToTrashRequestDto requestDto,
+            @SessionAttribute long userId) {
+        storageService.moveToTrash(requestDto.getPaths(), userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/trash/restore")
+    public ResponseEntity<Void> restoreFromTrash(@RequestBody RestoreFromTrashRequestDto requestDto,
+            @SessionAttribute long userId) {
+        storageService.restoreFromTrash(requestDto.getPaths(), userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/trash")
+    public ResponseEntity<List<ResourceResponseDto>> getTrash(@SessionAttribute long userId) {
+        List<ResourceResponseDto> trashedResources = storageService.getTrash(userId);
+        return ResponseEntity.ok().body(trashedResources);
+    }
+
+    @GetMapping("/trash/download")
+    public ResponseEntity<Resource> downloadFromTrash(@RequestParam String path,
+            @SessionAttribute long userId) {
+        DownloadResourceDto downloadResourceDto = storageService.downloadFromTrash(path, userId);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + downloadResourceDto.getName() + "\"")
+                .body(downloadResourceDto.getResource());
+    }
+
+    @DeleteMapping("/trash/items")
+    public ResponseEntity<Void> deleteFromTrash(@RequestBody DeleteFromTrashRequestDto requestDto,
+            @SessionAttribute long userId) {
+        storageService.deleteFromTrash(requestDto.getPaths(), userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/trash")
+    public ResponseEntity<Void> emptyTrash(@SessionAttribute long userId) {
+        storageService.emptyTrash(userId);
+        return ResponseEntity.noContent().build();
     }
 }
