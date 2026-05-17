@@ -1,5 +1,6 @@
 package com.iposhka.filestorageapi.service;
 
+import com.iposhka.filestorageapi.dto.responce.StorageInfoDto;
 import com.iposhka.filestorageapi.dto.responce.resourse.DirectoryResponseDto;
 import com.iposhka.filestorageapi.dto.responce.resourse.DownloadResourceDto;
 import com.iposhka.filestorageapi.dto.responce.resourse.FileResponseDto;
@@ -20,6 +21,7 @@ import io.minio.messages.Item;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -45,6 +47,9 @@ import static java.util.regex.Pattern.CASE_INSENSITIVE;
 @Service
 @RequiredArgsConstructor
 public class StorageService {
+
+    @Value("${storage.max-size-bytes:1073741824}")
+    private long maxStorageSize;
 
     private final MinioRepository minioRepository;
     private final UserRepository userRepository;
@@ -260,9 +265,30 @@ public class StorageService {
         executeMinioOperationIgnoreNotFound(() -> minioRepository.statObject(fullPath))
                 .orElseThrow(() -> new DirectoryNotFoundException("Directory not found"));
 
+        StorageInfoDto storageInfo = getStorageInfo(userId);
+        long availableSpace = maxStorageSize - storageInfo.getUsedSpace();
+
         List<SnowballObject> objects = new ArrayList<>();
+        List<MultipartFile> allowedFiles = new ArrayList<>();
+        List<String> rejectedFiles = new ArrayList<>();
 
         for (MultipartFile file : files) {
+            String fileName = extractName(file.getOriginalFilename());
+            long fileSize = file.getSize();
+
+            if (fileSize <= availableSpace) {
+                allowedFiles.add(file);
+                availableSpace -= fileSize;
+            } else {
+                rejectedFiles.add(fileName);
+            }
+        }
+
+        if (allowedFiles.isEmpty() && !rejectedFiles.isEmpty()) {
+            throw new StorageQuotaExceededException("Not enough storage space to upload these files", rejectedFiles);
+        }
+
+        for (MultipartFile file : allowedFiles) {
             String fileName = extractName(file.getOriginalFilename());
             String uploadFilePath = fullPath + fileName;
 
@@ -282,7 +308,7 @@ public class StorageService {
         List<ResourceResponseDto> result = new ArrayList<>();
         List<String> uploadedFileNames = new ArrayList<>();
 
-        for (MultipartFile file : files) {
+        for (MultipartFile file : allowedFiles) {
             String fileName = extractName(file.getOriginalFilename());
             String responsePath = removeLastSlash(path);
             result.add(new FileResponseDto(responsePath, fileName, file.getSize()));
@@ -293,6 +319,10 @@ public class StorageService {
         log.info("{} upload resources: {}", getUsername(userId), uploadedResources);
         publisher.publish(getUsername(userId),
                 String.format(Action.UPLOAD_RESOURCE.getDescription(), uploadedResources), Action.UPLOAD_RESOURCE);
+
+        if (!rejectedFiles.isEmpty()) {
+            throw new StorageQuotaExceededException("Partially uploaded. Some files exceeded quota.", rejectedFiles);
+        }
 
         return result;
     }
@@ -479,14 +509,11 @@ public class StorageService {
         publisher.publish(getUsername(userId), "Emptied whole trash", Action.DELETE_RESOURCE);
     }
 
-    // ================= DOWNLOAD FROM TRASH LOGIC =================
-
     public DownloadResourceDto downloadFromTrash(String path, long userId) {
         if (path.isBlank() || path.startsWith("/")) {
             throw new InvalidResourcePathException(INVALID_PATH_ERROR_MESSAGE);
         }
 
-        // Пытаемся найти точное совпадение (если это файл)
         Optional<Trash> exactMatch = trashRepository.findByPathAndUserId(path, userId);
 
         if (exactMatch.isPresent() && !exactMatch.get().isDirectory()) {
@@ -506,7 +533,6 @@ public class StorageService {
                     .build();
         }
 
-        // Если точное совпадение — это папка, или мы скачиваем папку, которой нет как отдельного маркера
         List<Trash> folderItems = trashRepository.findAllByUserId(userId).stream()
                 .filter(t -> t.getPath().startsWith(path) && !t.isDirectory() && t.getTrashObjectName() != null)
                 .toList();
@@ -520,6 +546,19 @@ public class StorageService {
                 Action.DOWNLOAD_RESOURCE);
 
         return downloadZipFromTrash(folderItems, path);
+    }
+
+    public StorageInfoDto getStorageInfo(long userId) {
+        long activeSpace = calculateDirectorySize(USER_DIR_TEMPLATE.formatted(userId));
+
+        long trashSpace = trashRepository.findAllByUserId(userId).stream()
+                .filter(t -> !t.isDirectory())
+                .mapToLong(t -> t.getSize() != null ? t.getSize() : 0L)
+                .sum();
+
+        long totalUsedSpace = activeSpace;
+
+        return new StorageInfoDto(maxStorageSize, totalUsedSpace, trashSpace, activeSpace);
     }
 
     private DownloadResourceDto downloadZipFromTrash(List<Trash> items, String basePath) {

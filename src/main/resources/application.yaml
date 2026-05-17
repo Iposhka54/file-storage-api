@@ -43,3 +43,5 @@ minio:
   credentials:
     accessKey: yarik
     secretKey: 12345678
+storage:
+  max-size-bytes: 1073741824
